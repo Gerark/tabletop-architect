@@ -1,0 +1,1386 @@
+{
+  "gameInfo": {
+    "name": "Monopoly",
+    "capsule": "test_capsule",
+    "thumbnail": "test_thumbnail",
+    "background": "test_background",
+    "categories": [
+      "Economic",
+      "Negotiation"
+    ],
+    "durations": [
+      {
+        "name": "Default",
+        "min": 180,
+        "max": 180
+      }
+    ],
+    "playerCounts": [
+      {
+        "name": "Default",
+        "min": 2,
+        "max": 8
+      }
+    ],
+    "age": 8
+  },
+  "resources": [
+    {
+      "key": "money",
+      "type": 1,
+      "scope": 1
+    }
+  ],
+  "elements": [
+    {
+      "key": "die",
+      "definition": {
+        "faces": [
+          {
+            "id": "1",
+            "value": 1
+          },
+          {
+            "id": "2",
+            "value": 2
+          },
+          {
+            "id": "3",
+            "value": 3
+          },
+          {
+            "id": "4",
+            "value": 4
+          },
+          {
+            "id": "5",
+            "value": 5
+          },
+          {
+            "id": "6",
+            "value": 6
+          }
+        ],
+        "randomDistribution": 1,
+        "ownerRequired": false
+      }
+    },
+    {
+      "key": "pawn_race_car",
+      "tags": [
+        "pawn"
+      ],
+      "definition": {
+        "randomDistribution": 0,
+        "ownerRequired": true
+      }
+    },
+    {
+      "key": "pawn_top_hat",
+      "tags": [
+        "pawn"
+      ],
+      "definition": {
+        "randomDistribution": 0,
+        "ownerRequired": true
+      }
+    },
+    {
+      "key": "pawn_thimble",
+      "tags": [
+        "pawn"
+      ],
+      "definition": {
+        "randomDistribution": 0,
+        "ownerRequired": true
+      }
+    },
+    {
+      "key": "pawn_terrier",
+      "tags": [
+        "pawn"
+      ],
+      "definition": {
+        "randomDistribution": 0,
+        "ownerRequired": true
+      }
+    },
+    {
+      "key": "pawn_money_sack",
+      "tags": [
+        "pawn"
+      ],
+      "definition": {
+        "randomDistribution": 0,
+        "ownerRequired": true
+      }
+    },
+    {
+      "key": "pawn_cat",
+      "tags": [
+        "pawn"
+      ],
+      "definition": {
+        "randomDistribution": 0,
+        "ownerRequired": true
+      }
+    },
+    {
+      "key": "pawn_penguin",
+      "tags": [
+        "pawn"
+      ],
+      "definition": {
+        "randomDistribution": 0,
+        "ownerRequired": true
+      }
+    },
+    {
+      "key": "pawn_rubber_duck",
+      "tags": [
+        "pawn"
+      ],
+      "definition": {
+        "randomDistribution": 0,
+        "ownerRequired": true
+      }
+    },
+    {
+      "key": "property_card",
+      "definition": {
+        "faces": [
+          {
+            "id": "Front",
+            "value": 1
+          },
+          {
+            "id": "Back",
+            "value": 0
+          }
+        ],
+        "randomDistribution": 0,
+        "ownerRequired": false
+      }
+    },
+    {
+      "key": "hotel_token",
+      "definition": {
+        "faces": [
+          {
+            "id": "default",
+            "value": 1
+          }
+        ],
+        "randomDistribution": 0,
+        "ownerRequired": false
+      }
+    },
+    {
+      "key": "board",
+      "definition": {
+        "faces": [
+          {
+            "id": "default",
+            "value": 1
+          }
+        ],
+        "randomDistribution": 0,
+        "ownerRequired": false
+      }
+    },
+    {
+      "key": "chance_advance_to_go_card",
+      "tags": [
+        "chance_card"
+      ],
+      "definition": {
+        "faces": [
+          {
+            "id": "Front",
+            "value": 0
+          },
+          {
+            "id": "Back",
+            "value": 0
+          }
+        ],
+        "randomDistribution": 0,
+        "ownerRequired": false
+      }
+    },
+    {
+      "key": "chance_advance_to_illinois_avenue_card",
+      "tags": [
+        "chance_card"
+      ],
+      "definition": {
+        "faces": [
+          {
+            "id": "Front",
+            "value": 0
+          },
+          {
+            "id": "Back",
+            "value": 0
+          }
+        ],
+        "randomDistribution": 0,
+        "ownerRequired": false
+      }
+    },
+    {
+      "key": "chance_advance_to_st_charles_place_card",
+      "tags": [
+        "chance_card"
+      ],
+      "definition": {
+        "faces": [
+          {
+            "id": "Front",
+            "value": 0
+          },
+          {
+            "id": "Back",
+            "value": 0
+          }
+        ],
+        "randomDistribution": 0,
+        "ownerRequired": false
+      }
+    },
+    {
+      "key": "chance_advance_to_nearest_utility_card",
+      "tags": [
+        "chance_card"
+      ],
+      "definition": {
+        "faces": [
+          {
+            "id": "Front",
+            "value": 0
+          },
+          {
+            "id": "Back",
+            "value": 0
+          }
+        ],
+        "randomDistribution": 0,
+        "ownerRequired": false
+      }
+    },
+    {
+      "key": "chance_advance_to_nearest_railroad_card_1",
+      "tags": [
+        "chance_card"
+      ],
+      "definition": {
+        "faces": [
+          {
+            "id": "Front",
+            "value": 0
+          },
+          {
+            "id": "Back",
+            "value": 0
+          }
+        ],
+        "randomDistribution": 0,
+        "ownerRequired": false
+      }
+    },
+    {
+      "key": "chance_advance_to_nearest_railroad_card_2",
+      "tags": [
+        "chance_card"
+      ],
+      "definition": {
+        "faces": [
+          {
+            "id": "Front",
+            "value": 0
+          },
+          {
+            "id": "Back",
+            "value": 0
+          }
+        ],
+        "randomDistribution": 0,
+        "ownerRequired": false
+      }
+    },
+    {
+      "key": "chance_bank_pays_dividend_card",
+      "tags": [
+        "chance_card"
+      ],
+      "definition": {
+        "faces": [
+          {
+            "id": "Front",
+            "value": 0
+          },
+          {
+            "id": "Back",
+            "value": 0
+          }
+        ],
+        "randomDistribution": 0,
+        "ownerRequired": false
+      }
+    },
+    {
+      "key": "chance_get_out_of_jail_free_card",
+      "tags": [
+        "chance_card"
+      ],
+      "definition": {
+        "faces": [
+          {
+            "id": "Front",
+            "value": 0
+          },
+          {
+            "id": "Back",
+            "value": 0
+          }
+        ],
+        "randomDistribution": 0,
+        "ownerRequired": true
+      }
+    },
+    {
+      "key": "chance_go_back_three_spaces_card",
+      "tags": [
+        "chance_card"
+      ],
+      "definition": {
+        "faces": [
+          {
+            "id": "Front",
+            "value": 0
+          },
+          {
+            "id": "Back",
+            "value": 0
+          }
+        ],
+        "randomDistribution": 0,
+        "ownerRequired": false
+      }
+    },
+    {
+      "key": "chance_go_to_jail_card",
+      "tags": [
+        "chance_card"
+      ],
+      "definition": {
+        "faces": [
+          {
+            "id": "Front",
+            "value": 0
+          },
+          {
+            "id": "Back",
+            "value": 0
+          }
+        ],
+        "randomDistribution": 0,
+        "ownerRequired": false
+      }
+    },
+    {
+      "key": "chance_general_repairs_card",
+      "tags": [
+        "chance_card"
+      ],
+      "definition": {
+        "faces": [
+          {
+            "id": "Front",
+            "value": 0
+          },
+          {
+            "id": "Back",
+            "value": 0
+          }
+        ],
+        "randomDistribution": 0,
+        "ownerRequired": false
+      }
+    },
+    {
+      "key": "chance_pay_poor_tax_card",
+      "tags": [
+        "chance_card"
+      ],
+      "definition": {
+        "faces": [
+          {
+            "id": "Front",
+            "value": 0
+          },
+          {
+            "id": "Back",
+            "value": 0
+          }
+        ],
+        "randomDistribution": 0,
+        "ownerRequired": false
+      }
+    },
+    {
+      "key": "chance_take_trip_to_reading_railroad_card",
+      "tags": [
+        "chance_card"
+      ],
+      "definition": {
+        "faces": [
+          {
+            "id": "Front",
+            "value": 0
+          },
+          {
+            "id": "Back",
+            "value": 0
+          }
+        ],
+        "randomDistribution": 0,
+        "ownerRequired": false
+      }
+    },
+    {
+      "key": "chance_advance_to_boardwalk_card",
+      "tags": [
+        "chance_card"
+      ],
+      "definition": {
+        "faces": [
+          {
+            "id": "Front",
+            "value": 0
+          },
+          {
+            "id": "Back",
+            "value": 0
+          }
+        ],
+        "randomDistribution": 0,
+        "ownerRequired": false
+      }
+    },
+    {
+      "key": "chance_elected_chairman_card",
+      "tags": [
+        "chance_card"
+      ],
+      "definition": {
+        "faces": [
+          {
+            "id": "Front",
+            "value": 0
+          },
+          {
+            "id": "Back",
+            "value": 0
+          }
+        ],
+        "randomDistribution": 0,
+        "ownerRequired": false
+      }
+    },
+    {
+      "key": "chance_building_loan_matures_card",
+      "tags": [
+        "chance_card"
+      ],
+      "definition": {
+        "faces": [
+          {
+            "id": "Front",
+            "value": 0
+          },
+          {
+            "id": "Back",
+            "value": 0
+          }
+        ],
+        "randomDistribution": 0,
+        "ownerRequired": false
+      }
+    },
+    {
+      "key": "community_chest_advance_to_go_card",
+      "tags": [
+        "community_card"
+      ],
+      "definition": {
+        "faces": [
+          {
+            "id": "Front",
+            "value": 0
+          },
+          {
+            "id": "Back",
+            "value": 0
+          }
+        ],
+        "randomDistribution": 0,
+        "ownerRequired": false
+      }
+    },
+    {
+      "key": "community_chest_bank_error_in_your_favor_card",
+      "tags": [
+        "community_card"
+      ],
+      "definition": {
+        "faces": [
+          {
+            "id": "Front",
+            "value": 0
+          },
+          {
+            "id": "Back",
+            "value": 0
+          }
+        ],
+        "randomDistribution": 0,
+        "ownerRequired": false
+      }
+    },
+    {
+      "key": "community_chest_doctors_fee_card",
+      "tags": [
+        "community_card"
+      ],
+      "definition": {
+        "faces": [
+          {
+            "id": "Front",
+            "value": 0
+          },
+          {
+            "id": "Back",
+            "value": 0
+          }
+        ],
+        "randomDistribution": 0,
+        "ownerRequired": false
+      }
+    },
+    {
+      "key": "community_chest_from_sale_of_stock_card",
+      "tags": [
+        "community_card"
+      ],
+      "definition": {
+        "faces": [
+          {
+            "id": "Front",
+            "value": 0
+          },
+          {
+            "id": "Back",
+            "value": 0
+          }
+        ],
+        "randomDistribution": 0,
+        "ownerRequired": false
+      }
+    },
+    {
+      "key": "community_chest_get_out_of_jail_free_card",
+      "tags": [
+        "community_card"
+      ],
+      "definition": {
+        "faces": [
+          {
+            "id": "Front",
+            "value": 0
+          },
+          {
+            "id": "Back",
+            "value": 0
+          }
+        ],
+        "randomDistribution": 0,
+        "ownerRequired": true
+      }
+    },
+    {
+      "key": "community_chest_go_to_jail_card",
+      "tags": [
+        "community_card"
+      ],
+      "definition": {
+        "faces": [
+          {
+            "id": "Front",
+            "value": 0
+          },
+          {
+            "id": "Back",
+            "value": 0
+          }
+        ],
+        "randomDistribution": 0,
+        "ownerRequired": false
+      }
+    },
+    {
+      "key": "community_chest_holiday_fund_matures_card",
+      "tags": [
+        "community_card"
+      ],
+      "definition": {
+        "faces": [
+          {
+            "id": "Front",
+            "value": 0
+          },
+          {
+            "id": "Back",
+            "value": 0
+          }
+        ],
+        "randomDistribution": 0,
+        "ownerRequired": false
+      }
+    },
+    {
+      "key": "community_chest_income_tax_refund_card",
+      "tags": [
+        "community_card"
+      ],
+      "definition": {
+        "faces": [
+          {
+            "id": "Front",
+            "value": 0
+          },
+          {
+            "id": "Back",
+            "value": 0
+          }
+        ],
+        "randomDistribution": 0,
+        "ownerRequired": false
+      }
+    },
+    {
+      "key": "community_chest_its_your_birthday_card",
+      "tags": [
+        "community_card"
+      ],
+      "definition": {
+        "faces": [
+          {
+            "id": "Front",
+            "value": 0
+          },
+          {
+            "id": "Back",
+            "value": 0
+          }
+        ],
+        "randomDistribution": 0,
+        "ownerRequired": false
+      }
+    },
+    {
+      "key": "community_chest_life_insurance_matures_card",
+      "tags": [
+        "community_card"
+      ],
+      "definition": {
+        "faces": [
+          {
+            "id": "Front",
+            "value": 0
+          },
+          {
+            "id": "Back",
+            "value": 0
+          }
+        ],
+        "randomDistribution": 0,
+        "ownerRequired": false
+      }
+    },
+    {
+      "key": "community_chest_hospital_fees_card",
+      "tags": [
+        "community_card"
+      ],
+      "definition": {
+        "faces": [
+          {
+            "id": "Front",
+            "value": 0
+          },
+          {
+            "id": "Back",
+            "value": 0
+          }
+        ],
+        "randomDistribution": 0,
+        "ownerRequired": false
+      }
+    },
+    {
+      "key": "community_chest_school_fees_card",
+      "tags": [
+        "community_card"
+      ],
+      "definition": {
+        "faces": [
+          {
+            "id": "Front",
+            "value": 0
+          },
+          {
+            "id": "Back",
+            "value": 0
+          }
+        ],
+        "randomDistribution": 0,
+        "ownerRequired": false
+      }
+    },
+    {
+      "key": "community_chest_receive_consultancy_fee_card",
+      "tags": [
+        "community_card"
+      ],
+      "definition": {
+        "faces": [
+          {
+            "id": "Front",
+            "value": 0
+          },
+          {
+            "id": "Back",
+            "value": 0
+          }
+        ],
+        "randomDistribution": 0,
+        "ownerRequired": false
+      }
+    },
+    {
+      "key": "community_chest_street_repairs_card",
+      "tags": [
+        "community_card"
+      ],
+      "definition": {
+        "faces": [
+          {
+            "id": "Front",
+            "value": 0
+          },
+          {
+            "id": "Back",
+            "value": 0
+          }
+        ],
+        "randomDistribution": 0,
+        "ownerRequired": false
+      }
+    },
+    {
+      "key": "community_chest_second_prize_beauty_contest_card",
+      "tags": [
+        "community_card"
+      ],
+      "definition": {
+        "faces": [
+          {
+            "id": "Front",
+            "value": 0
+          },
+          {
+            "id": "Back",
+            "value": 0
+          }
+        ],
+        "randomDistribution": 0,
+        "ownerRequired": false
+      }
+    },
+    {
+      "key": "community_chest_inherit_card",
+      "tags": [
+        "community_card"
+      ],
+      "definition": {
+        "faces": [
+          {
+            "id": "Front",
+            "value": 0
+          },
+          {
+            "id": "Back",
+            "value": 0
+          }
+        ],
+        "randomDistribution": 0,
+        "ownerRequired": false
+      }
+    }
+  ],
+  "areas": [
+    {
+      "key": "road_1_group_1"
+    },
+    {
+      "key": "road_2_group_1"
+    },
+    {
+      "key": "road_1_group_2"
+    },
+    {
+      "key": "road_2_group_2"
+    },
+    {
+      "key": "road_3_group_2"
+    },
+    {
+      "key": "road_1_group_3"
+    },
+    {
+      "key": "road_2_group_3"
+    },
+    {
+      "key": "road_3_group_3"
+    },
+    {
+      "key": "road_1_group_4"
+    },
+    {
+      "key": "road_2_group_4"
+    },
+    {
+      "key": "road_3_group_4"
+    },
+    {
+      "key": "road_1_group_5"
+    },
+    {
+      "key": "road_2_group_5"
+    },
+    {
+      "key": "road_3_group_5"
+    },
+    {
+      "key": "road_1_group_6"
+    },
+    {
+      "key": "road_2_group_6"
+    },
+    {
+      "key": "road_3_group_6"
+    },
+    {
+      "key": "road_1_group_7"
+    },
+    {
+      "key": "road_2_group_7"
+    },
+    {
+      "key": "road_3_group_7"
+    },
+    {
+      "key": "road_1_group_8"
+    },
+    {
+      "key": "road_2_group_8"
+    },
+    {
+      "key": "go"
+    },
+    {
+      "key": "go_to_jail"
+    },
+    {
+      "key": "prison"
+    },
+    {
+      "key": "just_visiting"
+    },
+    {
+      "key": "free_parking"
+    },
+    {
+      "key": "community_chest_1"
+    },
+    {
+      "key": "community_chest_2"
+    },
+    {
+      "key": "community_chest_3"
+    },
+    {
+      "key": "station_1"
+    },
+    {
+      "key": "station_2"
+    },
+    {
+      "key": "station_3"
+    },
+    {
+      "key": "station_4"
+    },
+    {
+      "key": "chance_1"
+    },
+    {
+      "key": "chance_2"
+    },
+    {
+      "key": "chance_3"
+    },
+    {
+      "key": "luxury_tax"
+    },
+    {
+      "key": "income_tax"
+    },
+    {
+      "key": "electric_company"
+    },
+    {
+      "key": "water_works"
+    },
+    {
+      "key": "chance_card_pile"
+    },
+    {
+      "key": "community_chest_card_pile"
+    }
+  ],
+  "rulesets": [
+    {
+      "key": "default_ruleset",
+      "when": {
+        "Compare": {
+          "Left": {
+            "bindingPath": "playersCount"
+          },
+          "Op": 2,
+          "Right": {
+            "intValue": 1
+          }
+        }
+      },
+      "setup": {
+        "steps": [
+          {
+            "action": "PlaceElement",
+            "parameters": [
+              {
+                "name": "Key",
+                "value": {
+                  "stringValue": "board"
+                }
+              },
+              {
+                "name": "Area",
+                "value": {
+                  "stringValue": "table"
+                }
+              },
+              {
+                "name": "Face",
+                "value": {
+                  "stringValue": "front"
+                }
+              }
+            ]
+          },
+          {
+            "action": "PlaceElements",
+            "parameters": [
+              {
+                "name": "Tag",
+                "value": {
+                  "stringValue": "chance_card"
+                }
+              },
+              {
+                "name": "Area",
+                "value": {
+                  "stringValue": "chance_card_pile"
+                }
+              },
+              {
+                "name": "Face",
+                "value": {
+                  "stringValue": "back"
+                }
+              }
+            ]
+          },
+          {
+            "action": "PlaceElements",
+            "parameters": [
+              {
+                "name": "Tag",
+                "value": {
+                  "stringValue": "community_card"
+                }
+              },
+              {
+                "name": "Area",
+                "value": {
+                  "stringValue": "community_chest_card_pile"
+                }
+              },
+              {
+                "name": "Face",
+                "value": {
+                  "stringValue": "back"
+                }
+              }
+            ]
+          },
+          {
+            "action": "SelectElement",
+            "repeat": {
+              "Collection": {
+                "bindingPath": "Players"
+              }
+            },
+            "parameters": [
+              {
+                "name": "Target",
+                "value": {
+                  "bindingPath": "repeat.Current"
+                }
+              },
+              {
+                "name": "FromTag",
+                "value": {
+                  "stringValue": "pawn"
+                }
+              },
+              {
+                "name": "AssignTo",
+                "value": {
+                  "stringValue": "Pawn"
+                }
+              }
+            ]
+          },
+          {
+            "action": "GiveResource",
+            "repeat": {
+              "Collection": {
+                "bindingPath": "Players"
+              }
+            },
+            "parameters": [
+              {
+                "name": "Target",
+                "value": {
+                  "bindingPath": "repeat.Current"
+                }
+              },
+              {
+                "name": "Resource",
+                "value": {
+                  "stringValue": "money"
+                }
+              },
+              {
+                "name": "Amount",
+                "value": {
+                  "intValue": 1500
+                }
+              }
+            ]
+          },
+          {
+            "action": "PlaceElement",
+            "repeat": {
+              "Collection": {
+                "bindingPath": "Players"
+              }
+            },
+            "parameters": [
+              {
+                "name": "Element",
+                "value": {
+                  "bindingPath": "repeat.Current.Pawn"
+                }
+              },
+              {
+                "name": "Area",
+                "value": {
+                  "stringValue": "go"
+                }
+              }
+            ]
+          },
+          {
+            "action": "DetermineFirstPlayer",
+            "parameters": [
+              {
+                "name": "Participants",
+                "value": {
+                  "bindingPath": "Players"
+                }
+              },
+              {
+                "name": "Tag",
+                "value": {
+                  "stringValue": "turn_die"
+                }
+              },
+              {
+                "name": "Method",
+                "value": {
+                  "stringValue": "HighestTotal"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "play": {
+        "startPhase": "roll_to_move",
+        "phases": [
+          {
+            "key": "roll_to_move",
+            "participants": {
+              "bindingPath": "CurrentPlayer"
+            },
+            "availableActions": [
+              {
+                "action": "Roll",
+                "parameters": [
+                  {
+                    "name": "Tag",
+                    "value": {
+                      "stringValue": "turn_die"
+                    }
+                  },
+                  {
+                    "name": "NumberOfDice",
+                    "value": {
+                      "intValue": 2
+                    }
+                  }
+                ]
+              }
+            ],
+            "events": [
+              {
+                "trigger": "OnRolled",
+                "nextPhase": "move_pawn",
+                "operations": [
+                  {
+                    "action": "StoreValue",
+                    "parameters": [
+                      {
+                        "name": "Key",
+                        "value": {
+                          "stringValue": "moveAmount"
+                        }
+                      },
+                      {
+                        "name": "Value",
+                        "value": {
+                          "bindingPath": "Event.Total"
+                        }
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "key": "move_pawn",
+            "events": [
+              {
+                "trigger": "OnPhaseStarted",
+                "operations": [
+                  {
+                    "action": "Move",
+                    "parameters": [
+                      {
+                        "name": "Element",
+                        "value": {
+                          "bindingPath": "CurrentPlayer.Pawn"
+                        }
+                      },
+                      {
+                        "name": "StepAmount",
+                        "value": {
+                          "bindingPath": "moveAmount"
+                        }
+                      },
+                      {
+                        "name": "StepKind",
+                        "value": {
+                          "stringValue": "Forward"
+                        }
+                      },
+                      {
+                        "name": "Topology",
+                        "value": {
+                          "stringValue": "board_path"
+                        }
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "trigger": "OnAreaPassed",
+                "when": {
+                  "Compare": {
+                    "Left": {
+                      "bindingPath": "Event.Area"
+                    },
+                    "Op": 0,
+                    "Right": {
+                      "stringValue": "go"
+                    }
+                  }
+                },
+                "operations": [
+                  {
+                    "action": "GiveResource",
+                    "parameters": [
+                      {
+                        "name": "Target",
+                        "value": {
+                          "bindingPath": "CurrentPlayer"
+                        }
+                      },
+                      {
+                        "name": "Resource",
+                        "value": {
+                          "stringValue": "money"
+                        }
+                      },
+                      {
+                        "name": "Amount",
+                        "value": {
+                          "intValue": 200
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "action": "GiveResource",
+                    "parameters": [
+                      {
+                        "name": "Target",
+                        "value": {
+                          "bindingPath": "CurrentPlayer"
+                        }
+                      },
+                      {
+                        "name": "Resource",
+                        "value": {
+                          "stringValue": "completed_laps"
+                        }
+                      },
+                      {
+                        "name": "Amount",
+                        "value": {
+                          "intValue": 1
+                        }
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "trigger": "OnMovementCompleted",
+                "nextPhase": "end_turn"
+              }
+            ]
+          }
+        ]
+      },
+      "victoryRules": [
+        {
+          "condition": {
+            "Compare": {
+              "Left": {
+                "bindingPath": "repeat.Current.completed_laps"
+              },
+              "Op": 3,
+              "Right": {
+                "intValue": 3
+              }
+            }
+          },
+          "winner": {
+            "bindingPath": "repeat.Current"
+          },
+          "repeat": {
+            "Collection": {
+              "bindingPath": "Players"
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "topology": {
+    "linearPaths": [
+      {
+        "key": "board_path",
+        "areas": [
+          "go",
+          "road_1_group_1",
+          "community_chest_1",
+          "road_2_group_1",
+          "income_tax",
+          "station_1",
+          "road_1_group_2",
+          "chance_1",
+          "road_2_group_2",
+          "road_3_group_2",
+          "just_visiting",
+          "road_1_group_3",
+          "electric_company",
+          "road_2_group_3",
+          "road_3_group_3",
+          "station_2",
+          "road_1_group_4",
+          "community_chest_2",
+          "road_2_group_4",
+          "road_3_group_4",
+          "free_parking",
+          "road_1_group_5",
+          "chance_2",
+          "road_2_group_5",
+          "road_3_group_5",
+          "station_3",
+          "road_1_group_6",
+          "road_2_group_6",
+          "water_works",
+          "road_3_group_6",
+          "go_to_jail",
+          "road_1_group_7",
+          "road_2_group_7",
+          "community_chest_3",
+          "road_3_group_7",
+          "station_4",
+          "chance_3",
+          "road_1_group_8",
+          "luxury_tax",
+          "road_2_group_8"
+        ],
+        "loop": false
+      }
+    ]
+  }
+}
