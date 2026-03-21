@@ -1,230 +1,260 @@
 using System;
-using UnityEditor.PackageManager;
-using UnityEngine.UIElements;
 
-namespace TTA.DataDefinition
+namespace TTA
 {
+    [Serializable]
     public enum RandomDistribution
     {
-        None,
-        Uniform,
-        Normal
+        None = 0,
+        Uniform = 1,
+        Normal = 2
     }
 
-    public enum ResourceType
+    [Serializable]
+    public enum PropertyScope
     {
-        String,
-        Number,
-        Boolean
+        Match = 0,
+        Player = 1,
+        Team = 2,
+        Element = 3,
+        Area = 4
     }
 
-    public enum ResourceScope
+    [Serializable]
+    public enum SlotCapacityKind
     {
-        Global,
-        Player,
-        Team
+        Single = 0,
+        Multiple = 1
+    }
+
+    [Serializable]
+    public enum OperationCode
+    {
+        None = 0,
+        TakeFromBox = 1,
+        PlaceElement = 2,
+        UnplaceElement = 3,
+        ReturnToBox = 4,
+        Move = 5,
+        WriteProperty = 6,
+        WriteTemp = 7,
+        AdvanceTurn = 8,
+        EndMatch = 9,
+        SetFace = 10,
+        FlipElement = 11,
+        Roll = 12,
+        SelectElement = 13,
+        DetermineFirstPlayer = 14
     }
 
     [Serializable]
     public class GameInfo
     {
         [Serializable]
-        public class Duration
+        public sealed class Duration
         {
-            public string name;
+            public string name = string.Empty;
             public int min;
             public int max;
         }
 
         [Serializable]
-        public class PlayerCount
+        public sealed class PlayerCount
         {
-            public string name;
+            public string name = string.Empty;
             public int min;
             public int max;
         }
 
-        public string name;
-        public string capsule;
-        public string thumbnail;
-        public string background;
-        public string[] categories;
-        public Duration[] durations;
-        public PlayerCount[] playerCounts;
+        public string name = string.Empty;
+        public string capsule = string.Empty;
+        public string thumbnail = string.Empty;
+        public string background = string.Empty;
+        public string[] categories = Array.Empty<string>();
+        public Duration[] durations = Array.Empty<Duration>();
+        public PlayerCount[] playerCounts = Array.Empty<PlayerCount>();
         public int age;
-
     }
 
     [Serializable]
-    public class ElementFace
+    public sealed class ElementFaceDefinition
     {
-        public string id;
-        public int value;
+        public string id = string.Empty;
+        public int numericValue;
+        public bool isDefault;
     }
 
     [Serializable]
-    public class ElementDefinition
+    public sealed class SlotDefinition
     {
-        public ElementFace[] faces;
-        public RandomDistribution randomDistribution;
-        public bool ownerRequired;
+        public string key = "default";
+        public bool isDefault = true;
+        public SlotCapacityKind capacityKind = SlotCapacityKind.Multiple;
+        public int capacityLimit;
     }
 
     [Serializable]
-    public class ElementPresentation
+    public sealed class AreaDefinition
     {
+        public string key = string.Empty;
+        public PropertyDefinition[] properties = Array.Empty<PropertyDefinition>();
+        public SlotDefinition[] slots = Array.Empty<SlotDefinition>();
     }
 
     [Serializable]
-    public class ElementInteraction
+    public sealed class LinearPathDefinition
     {
-    }
-
-    [Serializable]
-    public class Element
-    {
-        public string key;
-        public string[] tags;
-        public ElementDefinition definition;
-        public ElementPresentation presentation;
-        public ElementInteraction interaction;
-    }
-
-    [Serializable]
-    public class Resource
-    {
-        public string key;
-        public ResourceType type;
-        public ResourceScope scope;
-    }
-
-    [Serializable]
-    public class Param
-    {
-        public string name;
-        public Value value;
-
-        public static Param New(string name, Value value)
-        {
-            return new Param { name = name, value = value };
-        }
-    }
-
-    [Serializable]
-    public class Area
-    {
-        public string key;
-    }
-
-    [Serializable]
-    public class LinearPath
-    {
-        public string key;
-        public string[] areas;
+        public string key = string.Empty;
+        public string[] areas = Array.Empty<string>();
         public bool loop;
     }
 
     [Serializable]
-    public class Link
+    public sealed class TopologyLinkDefinition
     {
-        public string from;
-        public string to;
-        public string kind;
+        public string from = string.Empty;
+        public string to = string.Empty;
+        public string name = string.Empty;
     }
 
     [Serializable]
-    public class LinkGroup
+    public sealed class TopologyLinkGroupDefinition
     {
-        public string key;
-        public Link[] links;
+        public string key = string.Empty;
+        public TopologyLinkDefinition[] links = Array.Empty<TopologyLinkDefinition>();
     }
 
     [Serializable]
-    public class Topology
+    public sealed class TopologyDefinition
     {
-        public LinearPath[] linearPaths;
-        public LinkGroup[] linkGroup;
+        public string key = string.Empty;
+        public LinearPathDefinition[] linearPaths = Array.Empty<LinearPathDefinition>();
+        public TopologyLinkGroupDefinition[] linkGroups = Array.Empty<TopologyLinkGroupDefinition>();
     }
 
     [Serializable]
-    public class VictoryRule
+    public sealed class ElementDefinition
     {
-        public Repeat repeat { get; set; }
+        public string key = string.Empty;
+        public string[] tags = Array.Empty<string>();
+        public int amount = 1;
+        public bool ownerRequired;
+        public RandomDistribution randomDistribution;
+        public ElementFaceDefinition[] faces = Array.Empty<ElementFaceDefinition>();
+        public PropertyDefinition[] properties = Array.Empty<PropertyDefinition>();
+        public AreaDefinition[] ownedAreas = Array.Empty<AreaDefinition>();
+        public TopologyDefinition[] topologies = Array.Empty<TopologyDefinition>();
+    }
+
+    [Serializable]
+    public sealed class PropertyDefinition
+    {
+        public string key = string.Empty;
+        public PropertyScope scope;
+        public ValueKind valueKind = ValueKind.Null;
+        public Value defaultValue = Value.Null();
+    }
+
+    [Serializable]
+    public sealed class OperationParameter
+    {
+        public string name = string.Empty;
+        public Value value = Value.Null();
+
+        public static OperationParameter Create(string name, Value value)
+        {
+            return new OperationParameter
+            {
+                name = name ?? string.Empty,
+                value = value ?? Value.Null()
+            };
+        }
+    }
+
+    [Serializable]
+    public sealed class RepeatDefinition
+    {
+        public Value collection = Value.Null();
+    }
+
+    [Serializable]
+    public sealed class SetupDefinition
+    {
+        public OperationDefinition[] steps = Array.Empty<OperationDefinition>();
+    }
+
+    [Serializable]
+    public sealed class PhaseDefinition
+    {
+        public string key = string.Empty;
+        public Value participants = Value.Null();
+        public PlayerActionDefinition[] availableActions = Array.Empty<PlayerActionDefinition>();
+        public EventRuleDefinition[] events = Array.Empty<EventRuleDefinition>();
+    }
+
+    [Serializable]
+    public sealed class PlayerActionDefinition
+    {
+        public string key = string.Empty;
+        public Condition when;
+        public OperationDefinition[] operations = Array.Empty<OperationDefinition>();
+    }
+
+    [Serializable]
+    public sealed class OperationDefinition
+    {
+        public OperationCode code;
+        public Condition when;
+        public RepeatDefinition repeat;
+        public OperationParameter[] parameters = Array.Empty<OperationParameter>();
+    }
+
+    [Serializable]
+    public sealed class EventRuleDefinition
+    {
+        public string trigger = string.Empty;
+        public Condition when;
+        public string nextPhase = string.Empty;
+        public OperationDefinition[] operations = Array.Empty<OperationDefinition>();
+    }
+
+    [Serializable]
+    public sealed class VictoryRuleDefinition
+    {
+        public RepeatDefinition repeat;
         public Condition condition;
-        public Value winner;
+        public Value winner = Value.Null();
     }
 
     [Serializable]
-    public class Ruleset
+    public sealed class PlayDefinition
     {
-        public string key;
+        public string startPhase = string.Empty;
+        public PhaseDefinition[] phases = Array.Empty<PhaseDefinition>();
+    }
+
+    [Serializable]
+    public sealed class RulesetDefinition
+    {
+        public string key = string.Empty;
         public Condition when;
-        public Setup setup;
-        public Play play;
-        public VictoryRule[] victoryRules;
+        public SetupDefinition setup = new();
+        public PlayDefinition play = new();
+        public VictoryRuleDefinition[] victoryRules = Array.Empty<VictoryRuleDefinition>();
     }
 
     [Serializable]
-    public class Play
+    public class GameDefinition
     {
-        public string startPhase;
-        public Phase[] phases;
+        public GameInfo gameInfo = new();
+        public PropertyDefinition[] properties = Array.Empty<PropertyDefinition>();
+        public AreaDefinition[] globalAreas = Array.Empty<AreaDefinition>();
+        public ElementDefinition[] elements = Array.Empty<ElementDefinition>();
+        public RulesetDefinition[] rulesets = Array.Empty<RulesetDefinition>();
     }
 
     [Serializable]
-    public class Setup
+    public sealed class GameData : GameDefinition
     {
-        public Operation[] steps;
-    }
-
-    [Serializable]
-    public class Repeat
-    {
-        public Value Collection;
-    }
-
-    [Serializable]
-    public class Phase
-    {
-        public string key;
-        public Value participants;
-        public PlayerAction[] availableActions;
-        public EventRule[] events;
-    }
-
-    [Serializable]
-    public class PlayerAction
-    {
-        public string action;
-        public Param[] parameters;
-    }
-
-    [Serializable]
-    public sealed class Operation
-    {
-        public string action;
-        public Condition when;
-        public Repeat repeat;
-        public Param[] parameters;
-    }
-
-    [Serializable]
-    public sealed class EventRule
-    {
-        public string trigger;
-        public Condition when;
-        public string nextPhase;
-        public Operation[] operations;
-    }
-
-    [Serializable]
-    public class GameData
-    {
-        public GameInfo gameInfo;
-        public Resource[] resources;
-        public Element[] elements;
-        public Area[] areas;
-        public Ruleset[] rulesets;
-        public Topology topology;
     }
 }

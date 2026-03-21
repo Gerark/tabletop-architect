@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using Unity.Plastic.Newtonsoft.Json;
-using UnityEngine;
 
 namespace TTA
 {
@@ -18,12 +17,14 @@ namespace TTA
         Float = 2,
         Bool = 3,
         String = 4,
-        Array = 5,
-        Object = 6,
-        Binding = 7
+        Binding = 5,
+        ElementId = 6,
+        PlayerId = 7,
+        AreaId = 8,
+        SlotId = 9,
+        Collection = 10
     }
 
-    [Serializable]
     [JsonConverter(typeof(ValueJsonConverter))]
     public sealed class Value
     {
@@ -33,15 +34,21 @@ namespace TTA
         public float floatValue;
         public bool boolValue;
         public string stringValue = string.Empty;
-
         public string bindingPath = string.Empty;
+        public int idValue;
 
-        public bool IsBinding => kind == ValueKind.Binding;
-        public bool IsLiteral => kind != ValueKind.Binding;
+        public ValueKind collectionItemKind = ValueKind.Null;
+        public List<Value> collectionItems = new();
+
         public bool IsNull => kind == ValueKind.Null;
-        public bool IsNumber => kind == ValueKind.Int || kind == ValueKind.Float;
-
-        public Value() { }
+        public bool IsBinding => kind == ValueKind.Binding;
+        public bool IsCollection => kind == ValueKind.Collection;
+        public bool IsNumeric => kind == ValueKind.Int || kind == ValueKind.Float;
+        public bool IsRuntimeId =>
+            kind == ValueKind.ElementId ||
+            kind == ValueKind.PlayerId ||
+            kind == ValueKind.AreaId ||
+            kind == ValueKind.SlotId;
 
         public static Value Null()
         {
@@ -93,9 +100,65 @@ namespace TTA
             };
         }
 
+        public static Value FromElementId(int value)
+        {
+            return FromRuntimeId(ValueKind.ElementId, value);
+        }
+
+        public static Value FromPlayerId(int value)
+        {
+            return FromRuntimeId(ValueKind.PlayerId, value);
+        }
+
+        public static Value FromAreaId(int value)
+        {
+            return FromRuntimeId(ValueKind.AreaId, value);
+        }
+
+        public static Value FromSlotId(int value)
+        {
+            return FromRuntimeId(ValueKind.SlotId, value);
+        }
+
+        public static Value FromCollection(IEnumerable<Value> items)
+        {
+            if (items == null)
+            {
+                return new Value
+                {
+                    kind = ValueKind.Collection
+                };
+            }
+
+            ValueKind itemKind = ValueKind.Null;
+            List<Value> copiedItems = new();
+
+            foreach (Value item in items)
+            {
+                Value nextItem = item == null ? Null() : item.DeepCopy();
+
+                if (nextItem.kind == ValueKind.Collection)
+                    throw new InvalidOperationException("Nested collections are not supported.");
+
+                if (itemKind == ValueKind.Null)
+                    itemKind = nextItem.kind;
+                else if (nextItem.kind != itemKind)
+                    throw new InvalidOperationException("Collections must contain homogeneous value kinds.");
+
+                copiedItems.Add(nextItem);
+            }
+
+            return new Value
+            {
+                kind = ValueKind.Collection,
+                collectionItemKind = itemKind,
+                collectionItems = copiedItems
+            };
+        }
+
         public Value Resolve(IValueResolver resolver)
         {
-            if (kind != ValueKind.Binding)
+            if (!IsBinding)
                 return this;
 
             if (resolver == null)
@@ -103,13 +166,12 @@ namespace TTA
 
             Value current = this;
 
-            // Safety guard in case a binding resolves to another binding in a loop.
             for (int i = 0; i < 64; i++)
             {
-                if (current.kind != ValueKind.Binding)
+                if (!current.IsBinding)
                     return current;
 
-                if (string.IsNullOrEmpty(current.bindingPath))
+                if (string.IsNullOrWhiteSpace(current.bindingPath))
                     throw new InvalidOperationException("Binding path is empty.");
 
                 current = resolver.Resolve(current.bindingPath);
@@ -121,112 +183,113 @@ namespace TTA
             throw new InvalidOperationException("Too many chained binding resolutions. Possible circular binding.");
         }
 
-        public T Get<T>(IValueResolver resolver = null)
+        public int AsInt(IValueResolver resolver = null)
         {
-            Value resolved = kind == ValueKind.Binding ? Resolve(resolver) : this;
-            Type requestedType = typeof(T);
+            Value resolved = ResolveIfNeeded(resolver);
 
-            if (requestedType == typeof(int))
-            {
-                if (resolved.kind != ValueKind.Int)
-                    throw new InvalidOperationException($"Value is {resolved.kind}, expected Int.");
-                return (T)(object)resolved.intValue;
-            }
+            if (resolved.kind != ValueKind.Int)
+                throw new InvalidOperationException($"Value is {resolved.kind}, expected Int.");
 
-            if (requestedType == typeof(float))
-            {
-                if (resolved.kind == ValueKind.Float)
-                    return (T)(object)resolved.floatValue;
+            return resolved.intValue;
+        }
 
-                if (resolved.kind == ValueKind.Int)
-                    return (T)(object)(float)resolved.intValue;
+        public float AsFloat(IValueResolver resolver = null)
+        {
+            Value resolved = ResolveIfNeeded(resolver);
 
-                throw new InvalidOperationException($"Value is {resolved.kind}, expected Float or Int.");
-            }
+            if (resolved.kind == ValueKind.Float)
+                return resolved.floatValue;
 
-            if (requestedType == typeof(bool))
-            {
-                if (resolved.kind != ValueKind.Bool)
-                    throw new InvalidOperationException($"Value is {resolved.kind}, expected Bool.");
-                return (T)(object)resolved.boolValue;
-            }
+            if (resolved.kind == ValueKind.Int)
+                return resolved.intValue;
 
-            if (requestedType == typeof(string))
-            {
-                if (resolved.kind != ValueKind.String)
-                    throw new InvalidOperationException($"Value is {resolved.kind}, expected String.");
-                return (T)(object)resolved.stringValue;
-            }
+            throw new InvalidOperationException($"Value is {resolved.kind}, expected Float or Int.");
+        }
 
-            if (requestedType == typeof(Value))
-            {
-                return (T)(object)resolved;
-            }
+        public bool AsBool(IValueResolver resolver = null)
+        {
+            Value resolved = ResolveIfNeeded(resolver);
 
-            throw new NotSupportedException($"Type {requestedType.Name} is not supported by Value.Get<T>().");
+            if (resolved.kind != ValueKind.Bool)
+                throw new InvalidOperationException($"Value is {resolved.kind}, expected Bool.");
+
+            return resolved.boolValue;
+        }
+
+        public string AsString(IValueResolver resolver = null)
+        {
+            Value resolved = ResolveIfNeeded(resolver);
+
+            if (resolved.kind != ValueKind.String)
+                throw new InvalidOperationException($"Value is {resolved.kind}, expected String.");
+
+            return resolved.stringValue ?? string.Empty;
+        }
+
+        public int AsRuntimeId(ValueKind expectedKind, IValueResolver resolver = null)
+        {
+            Value resolved = ResolveIfNeeded(resolver);
+
+            if (resolved.kind != expectedKind)
+                throw new InvalidOperationException($"Value is {resolved.kind}, expected {expectedKind}.");
+
+            return resolved.idValue;
+        }
+
+        public List<Value> AsCollection(IValueResolver resolver = null)
+        {
+            Value resolved = ResolveIfNeeded(resolver);
+
+            if (resolved.kind != ValueKind.Collection)
+                throw new InvalidOperationException($"Value is {resolved.kind}, expected Collection.");
+
+            List<Value> copiedItems = new(resolved.collectionItems.Count);
+            for (int index = 0; index < resolved.collectionItems.Count; index++)
+                copiedItems.Add(resolved.collectionItems[index].DeepCopy());
+
+            return copiedItems;
         }
 
         public Value DeepCopy()
         {
-            switch (kind)
+            List<Value> copiedItems = new(collectionItems.Count);
+            for (int index = 0; index < collectionItems.Count; index++)
+                copiedItems.Add(collectionItems[index].DeepCopy());
+
+            return new Value
             {
-                case ValueKind.Null:
-                    return Null();
-
-                case ValueKind.Int:
-                    return FromInt(intValue);
-
-                case ValueKind.Float:
-                    return FromFloat(floatValue);
-
-                case ValueKind.Bool:
-                    return FromBool(boolValue);
-
-                case ValueKind.String:
-                    return FromString(stringValue);
-
-                case ValueKind.Binding:
-                    return FromBinding(bindingPath);
-
-                default:
-                    throw new ArgumentOutOfRangeException();
-            }
+                kind = kind,
+                intValue = intValue,
+                floatValue = floatValue,
+                boolValue = boolValue,
+                stringValue = stringValue ?? string.Empty,
+                bindingPath = bindingPath ?? string.Empty,
+                idValue = idValue,
+                collectionItemKind = collectionItemKind,
+                collectionItems = copiedItems
+            };
         }
 
-        public string ToUnityJson(bool prettyPrint = false)
+        private Value ResolveIfNeeded(IValueResolver resolver)
         {
-            switch(kind)
+            return kind == ValueKind.Binding ? Resolve(resolver) : this;
+        }
+
+        private static Value FromRuntimeId(ValueKind runtimeKind, int value)
+        {
+            if (runtimeKind != ValueKind.ElementId &&
+                runtimeKind != ValueKind.PlayerId &&
+                runtimeKind != ValueKind.AreaId &&
+                runtimeKind != ValueKind.SlotId)
             {
-                case ValueKind.Null:
-                case ValueKind.Int:
-                case ValueKind.Float:
-                case ValueKind.Bool:
-                case ValueKind.String:
-                    return JsonUtility.ToJson(this, prettyPrint);
-                case ValueKind.Binding:
-                    // For bindings, we serialize a simple object with the binding path for easier readability.
-                    return JsonUtility.ToJson(new { bind = bindingPath }, prettyPrint);
-                default:
-                    throw new InvalidOperationException($"Unsupported ValueKind: {kind}");
+                throw new InvalidOperationException($"{runtimeKind} is not a runtime id value kind.");
             }
-        }
-    }
 
-    public sealed class SimpleValueResolver : IValueResolver
-    {
-        private readonly Dictionary<string, Value> _values = new();
-
-        public void Set(string path, Value value)
-        {
-            _values[path] = value;
-        }
-
-        public Value Resolve(string path)
-        {
-            if (_values.TryGetValue(path, out Value value))
-                return value;
-
-            throw new KeyNotFoundException($"Binding path '{path}' was not found.");
+            return new Value
+            {
+                kind = runtimeKind,
+                idValue = value
+            };
         }
     }
 }

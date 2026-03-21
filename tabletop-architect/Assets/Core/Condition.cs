@@ -1,107 +1,150 @@
 using System;
 using System.Collections.Generic;
+using Unity.Plastic.Newtonsoft.Json;
 
 namespace TTA
 {
+    [Serializable]
     public enum ComparisonOperator
     {
-        Eq,
-        Neq,
-        Gt,
-        Gte,
-        Lt,
-        Lte
+        Eq = 0,
+        Neq = 1,
+        Gt = 2,
+        Gte = 3,
+        Lt = 4,
+        Lte = 5
     }
 
+    [JsonConverter(typeof(ConditionJsonConverter))]
     public sealed class Condition
     {
-        // Composite
-        public List<Condition> All { get; set; }
-        public List<Condition> Any { get; set; }
-        public Condition Not { get; set; }
-
-        // Leaf
-        public ComparisonCondition Compare { get; set; }
+        public List<Condition> all = new();
+        public List<Condition> any = new();
+        public Condition not;
+        public ComparisonCondition compare;
     }
 
     public sealed class ComparisonCondition
     {
-        public Value Left { get; set; }
-        public ComparisonOperator Op { get; set; }
-        public Value Right { get; set; }
-
-        public ComparisonCondition()
-        {
-        }
+        public Value left = Value.Null();
+        public ComparisonOperator op;
+        public Value right = Value.Null();
     }
 
     public static class ConditionEvaluator
     {
         public static bool Evaluate(Condition condition, IValueResolver resolver)
         {
-            if (condition.All is not null)
+            if (condition == null)
+                return true;
+
+            bool hasAll = condition.all != null && condition.all.Count > 0;
+            bool hasAny = condition.any != null && condition.any.Count > 0;
+            bool hasNot = condition.not != null;
+            bool hasCompare = condition.compare != null;
+
+            if (!hasAll && !hasAny && !hasNot && !hasCompare)
+                return true;
+
+            if (hasAll)
             {
-                foreach (Condition child in condition.All)
+                for (int index = 0; index < condition.all.Count; index++)
                 {
-                    if (!Evaluate(child, resolver))
+                    if (!Evaluate(condition.all[index], resolver))
                         return false;
                 }
+
                 return true;
             }
 
-            if (condition.Any is not null)
+            if (hasAny)
             {
-                foreach (Condition child in condition.Any)
+                for (int index = 0; index < condition.any.Count; index++)
                 {
-                    if (Evaluate(child, resolver))
+                    if (Evaluate(condition.any[index], resolver))
                         return true;
                 }
+
                 return false;
             }
 
-            if (condition.Not is not null)
-            {
-                return !Evaluate(condition.Not, resolver);
-            }
+            if (hasNot)
+                return !Evaluate(condition.not, resolver);
 
-            if (condition.Compare is not null)
-            {
-                return EvaluateCompare(condition.Compare, resolver);
-            }
-
-            throw new InvalidOperationException("Condition is invalid.");
+            return EvaluateCompare(condition.compare, resolver);
         }
 
         private static bool EvaluateCompare(ComparisonCondition compare, IValueResolver resolver)
         {
-            Value left = compare.Left.Resolve(resolver);
-            Value right = compare.Right.Resolve(resolver);
+            Value left = compare.left.Resolve(resolver);
+            Value right = compare.right.Resolve(resolver);
 
-            return compare.Op switch
+            switch (compare.op)
             {
-                ComparisonOperator.Eq => AreEqual(left, right),
-                ComparisonOperator.Neq => !AreEqual(left, right),
-                ComparisonOperator.Gt => left.Get<float>(resolver) > right.Get<float>(resolver),
-                ComparisonOperator.Gte => left.Get<float>(resolver) >= right.Get<float>(resolver),
-                ComparisonOperator.Lt => left.Get<float>(resolver) < right.Get<float>(resolver),
-                ComparisonOperator.Lte => left.Get<float>(resolver) <= right.Get<float>(resolver),
-                _ => throw new InvalidOperationException()
-            };
+                case ComparisonOperator.Eq:
+                    return AreEqual(left, right);
+                case ComparisonOperator.Neq:
+                    return !AreEqual(left, right);
+                case ComparisonOperator.Gt:
+                    return left.AsFloat() > right.AsFloat();
+                case ComparisonOperator.Gte:
+                    return left.AsFloat() >= right.AsFloat();
+                case ComparisonOperator.Lt:
+                    return left.AsFloat() < right.AsFloat();
+                case ComparisonOperator.Lte:
+                    return left.AsFloat() <= right.AsFloat();
+                default:
+                    throw new InvalidOperationException($"Unsupported comparison operator {compare.op}.");
+            }
         }
 
-        private static bool AreEqual(Value a, Value b)
+        public static bool AreEqual(Value left, Value right)
         {
-            if (a.kind != b.kind)
+            if (left.kind == ValueKind.Int && right.kind == ValueKind.Float)
+                return Math.Abs(left.intValue - right.floatValue) < 0.0001f;
+
+            if (left.kind == ValueKind.Float && right.kind == ValueKind.Int)
+                return Math.Abs(left.floatValue - right.intValue) < 0.0001f;
+
+            if (left.kind != right.kind)
                 return false;
 
-            return a.kind switch
+            switch (left.kind)
             {
-                ValueKind.Int => a.Get<int>() == b.Get<int>(),
-                ValueKind.Float => a.Get<float>() == b.Get<float>(),
-                ValueKind.Bool => a.Get<bool>() == b.Get<bool>(),
-                ValueKind.String => a.Get<string>() == b.Get<string>(),
-                _ => false
-            };
+                case ValueKind.Null:
+                    return true;
+                case ValueKind.Int:
+                    return left.intValue == right.intValue;
+                case ValueKind.Float:
+                    return Math.Abs(left.floatValue - right.floatValue) < 0.0001f;
+                case ValueKind.Bool:
+                    return left.boolValue == right.boolValue;
+                case ValueKind.String:
+                    return string.Equals(left.stringValue, right.stringValue, StringComparison.Ordinal);
+                case ValueKind.ElementId:
+                case ValueKind.PlayerId:
+                case ValueKind.AreaId:
+                case ValueKind.SlotId:
+                    return left.idValue == right.idValue;
+                case ValueKind.Binding:
+                    return string.Equals(left.bindingPath, right.bindingPath, StringComparison.Ordinal);
+                case ValueKind.Collection:
+                    if (left.collectionItems.Count != right.collectionItems.Count ||
+                        left.collectionItemKind != right.collectionItemKind)
+                    {
+                        return false;
+                    }
+
+                    for (int index = 0; index < left.collectionItems.Count; index++)
+                    {
+                        if (!AreEqual(left.collectionItems[index], right.collectionItems[index]))
+                            return false;
+                    }
+
+                    return true;
+                default:
+                    throw new InvalidOperationException($"Unsupported ValueKind {left.kind}.");
+            }
         }
     }
 }

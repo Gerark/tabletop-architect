@@ -41,3 +41,11 @@ Prioritize clean architecture, serializable runtime data, and incremental implem
 - Placement operations
 - Local topology and movement
 - Phase / event loop
+
+## Local Agent Rules
+- Default to read-only analysis.
+- Do not modify files unless the user explicitly asks for a patch.
+- Do not run `dotnet`, `msbuild`, Unity builds, test runners, or any command that generates binaries or artifacts.
+- Do not use PowerShell reflection, `Assembly.Load*`, or `Add-Type`.
+- Do not touch `Temp/`, `bin/`, `obj/`, or generated project files.
+- If code changes are requested, provide a proposed diff in chat unless the user explicitly approves file edits.
