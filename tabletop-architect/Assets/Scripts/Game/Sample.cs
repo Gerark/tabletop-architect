@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
+using UnityEngine;
+using TTA.Core;
 
-namespace TTA.Core
+namespace TTA.Game
 {
     public static class Sample
     {
@@ -74,7 +76,14 @@ namespace TTA.Core
                 },
                 globalAreas = new[]
                 {
-                    CreateArea("table")
+                    CreateArea(
+                        "table",
+                        CreateAreaPresentation(
+                            new Vector3(-1.6f, 0f, 0f),
+                            new Vector3(3.2f, 0f, -0.35f),
+                            Vector3.up,
+                            true,
+                            new Vector3(11f, 8f, 1.5f)))
                 },
                 elements = elements.ToArray(),
                 rulesets = new[]
@@ -276,6 +285,11 @@ namespace TTA.Core
                 tags = new[] { "turn_die" },
                 amount = 2,
                 randomDistribution = RandomDistribution.Uniform,
+                presentation = CreateElementPresentation(
+                    PresentationPrimitiveKind.Cube,
+                    new Vector3(0.7f, 0.7f, 0.7f),
+                    new Color(0.96f, 0.94f, 0.87f),
+                    new Vector3(0f, 0f, -0.1f)),
                 faces = new[]
                 {
                     CreateFace("1", 1, true),
@@ -295,16 +309,18 @@ namespace TTA.Core
                 key = key,
                 tags = new[] { "pawn" },
                 ownerRequired = true,
-                randomDistribution = RandomDistribution.None
+                randomDistribution = RandomDistribution.None,
+                presentation = CreatePawnPresentation(key)
             };
         }
 
-        private static ElementDefinition CreateSingleFaceElement(string key, string faceId, int numericValue)
+        private static ElementDefinition CreateSingleFaceElement(string key, string faceId, int numericValue, ElementPresentationDefinition presentation = null)
         {
             return new ElementDefinition
             {
                 key = key,
                 randomDistribution = RandomDistribution.None,
+                presentation = presentation ?? CreateDefaultTokenPresentation(),
                 faces = new[]
                 {
                     CreateFace(faceId, numericValue, true)
@@ -312,12 +328,13 @@ namespace TTA.Core
             };
         }
 
-        private static ElementDefinition CreateTwoFaceElement(string key, string frontId, int frontValue, string backId, int backValue)
+        private static ElementDefinition CreateTwoFaceElement(string key, string frontId, int frontValue, string backId, int backValue, ElementPresentationDefinition presentation = null)
         {
             return new ElementDefinition
             {
                 key = key,
                 randomDistribution = RandomDistribution.None,
+                presentation = presentation ?? CreateCardPresentation(new Color(0.92f, 0.82f, 0.58f)),
                 faces = new[]
                 {
                     CreateFace(frontId, frontValue, true),
@@ -330,15 +347,34 @@ namespace TTA.Core
         {
             List<AreaDefinition> ownedAreas = new();
             for (int index = 0; index < boardTrack.Length; index++)
-                ownedAreas.Add(CreateArea(boardTrack[index]));
+                ownedAreas.Add(CreateArea(boardTrack[index], CreateBoardTrackAreaPresentation(index)));
 
-            ownedAreas.Add(CreateArea("chance_card_pile"));
-            ownedAreas.Add(CreateArea("community_chest_card_pile"));
+            ownedAreas.Add(CreateArea(
+                "chance_card_pile",
+                CreateAreaPresentation(
+                    new Vector3(1.1f, 1.1f, 0f),
+                    new Vector3(0f, 0.03f, -0.01f),
+                    Vector3.zero,
+                    true,
+                    new Vector3(0.9f, 1.1f, 0.6f))));
+            ownedAreas.Add(CreateArea(
+                "community_chest_card_pile",
+                CreateAreaPresentation(
+                    new Vector3(-1.1f, -1.1f, 0f),
+                    new Vector3(0f, 0.03f, -0.01f),
+                    Vector3.zero,
+                    true,
+                    new Vector3(0.9f, 1.1f, 0.6f))));
 
             return new ElementDefinition
             {
                 key = "board",
                 randomDistribution = RandomDistribution.None,
+                presentation = CreateElementPresentation(
+                    PresentationPrimitiveKind.Cube,
+                    new Vector3(5.6f, 5.6f, 0.2f),
+                    new Color(0.75f, 0.66f, 0.46f),
+                    Vector3.zero),
                 faces = new[]
                 {
                     CreateFace("default", 1, true)
@@ -424,6 +460,9 @@ namespace TTA.Core
                 tags = new[] { tag },
                 ownerRequired = ownerRequired,
                 randomDistribution = RandomDistribution.None,
+                presentation = string.Equals(tag, "chance_card", StringComparison.Ordinal)
+                    ? CreateCardPresentation(new Color(0.93f, 0.78f, 0.58f))
+                    : CreateCardPresentation(new Color(0.75f, 0.87f, 0.95f)),
                 faces = new[]
                 {
                     CreateFace("Front", 0, true),
@@ -432,11 +471,12 @@ namespace TTA.Core
             };
         }
 
-        private static AreaDefinition CreateArea(string key)
+        private static AreaDefinition CreateArea(string key, AreaPresentationDefinition presentation = null)
         {
             return new AreaDefinition
             {
-                key = key
+                key = key,
+                presentation = presentation ?? new AreaPresentationDefinition()
             };
         }
 
@@ -494,6 +534,122 @@ namespace TTA.Core
                     right = right
                 }
             };
+        }
+
+        private static ElementPresentationDefinition CreateElementPresentation(
+            PresentationPrimitiveKind primitive,
+            Vector3 scale,
+            Color color,
+            Vector3 localOffset,
+            Vector3 localEulerAngles = default)
+        {
+            return new ElementPresentationDefinition
+            {
+                primitive = primitive,
+                localScale = scale,
+                color = color,
+                localOffset = localOffset,
+                localEulerAngles = localEulerAngles
+            };
+        }
+
+        private static AreaPresentationDefinition CreateAreaPresentation(
+            Vector3 anchor,
+            Vector3 itemOffset,
+            Vector3 normal = default,
+            bool hasBoxCollider = false,
+            Vector3 boxColliderSize = default,
+            Vector3 boxColliderCenter = default)
+        {
+            return new AreaPresentationDefinition
+            {
+                anchor = anchor,
+                itemOffset = itemOffset,
+                normal = normal == Vector3.zero ? Vector3.forward : normal.normalized,
+                hasBoxCollider = hasBoxCollider,
+                boxColliderSize = boxColliderSize == Vector3.zero ? Vector3.one : boxColliderSize,
+                boxColliderCenter = boxColliderCenter
+            };
+        }
+
+        private static ElementPresentationDefinition CreatePawnPresentation(string key)
+        {
+            Color color = key switch
+            {
+                "pawn_race_car" => new Color(0.84f, 0.2f, 0.18f),
+                "pawn_top_hat" => new Color(0.16f, 0.18f, 0.22f),
+                "pawn_thimble" => new Color(0.7f, 0.72f, 0.76f),
+                "pawn_terrier" => new Color(0.58f, 0.44f, 0.31f),
+                "pawn_money_sack" => new Color(0.73f, 0.61f, 0.24f),
+                "pawn_cat" => new Color(0.91f, 0.53f, 0.22f),
+                "pawn_penguin" => new Color(0.22f, 0.42f, 0.75f),
+                "pawn_rubber_duck" => new Color(0.95f, 0.84f, 0.18f),
+                _ => new Color(0.62f, 0.62f, 0.62f)
+            };
+
+            return CreateElementPresentation(
+                PresentationPrimitiveKind.Capsule,
+                new Vector3(0.38f, 0.6f, 0.38f),
+                color,
+                new Vector3(0f, 0f, -0.2f));
+        }
+
+        private static ElementPresentationDefinition CreateCardPresentation(Color color)
+        {
+            return CreateElementPresentation(
+                PresentationPrimitiveKind.Cube,
+                new Vector3(0.55f, 0.8f, 0.08f),
+                color,
+                new Vector3(0f, 0f, -0.08f));
+        }
+
+        private static ElementPresentationDefinition CreateDefaultTokenPresentation()
+        {
+            return CreateElementPresentation(
+                PresentationPrimitiveKind.Cube,
+                new Vector3(0.35f, 0.35f, 0.2f),
+                new Color(0.82f, 0.72f, 0.5f),
+                new Vector3(0f, 0f, -0.08f));
+        }
+
+        private static AreaPresentationDefinition CreateBoardTrackAreaPresentation(int index)
+        {
+            const float edge = 2.25f;
+            const float stepCount = 10f;
+            float x;
+            float y;
+
+            if (index <= 10)
+            {
+                float t = index / stepCount;
+                x = Mathf.Lerp(edge, -edge, t);
+                y = -edge;
+            }
+            else if (index <= 20)
+            {
+                float t = (index - 10) / stepCount;
+                x = -edge;
+                y = Mathf.Lerp(-edge, edge, t);
+            }
+            else if (index <= 30)
+            {
+                float t = (index - 20) / stepCount;
+                x = Mathf.Lerp(-edge, edge, t);
+                y = edge;
+            }
+            else
+            {
+                float t = (index - 30) / stepCount;
+                x = edge;
+                y = Mathf.Lerp(edge, -edge, t);
+            }
+
+            return CreateAreaPresentation(
+                new Vector3(x, y, 0f),
+                new Vector3(0.18f, 0.18f, -0.02f),
+                Vector3.zero,
+                true,
+                new Vector3(0.65f, 0.65f, 0.6f));
         }
     }
 }

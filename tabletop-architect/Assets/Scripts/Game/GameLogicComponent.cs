@@ -13,6 +13,7 @@ public class GameLogicComponent : MonoBehaviour
     [SerializeField] private int seed = 1234;
     [SerializeField] private bool autoAdvance = true;
     [SerializeField] private float secondsPerAction = 1.0f;
+    [SerializeField] private Dummy3DTranscriptPresenter dummy3DPresenter;
 
     private Engine _engine;
     private MatchState _match;
@@ -20,6 +21,12 @@ public class GameLogicComponent : MonoBehaviour
     private float _stepCountdown;
     private bool _loggedCompletion;
     private int _presentedTranscriptBatchCount;
+    private int _presented3DTranscriptBatchCount;
+
+    void Awake()
+    {
+        EnsureDummy3DPresenter();
+    }
 
     void Start()
     {
@@ -60,6 +67,9 @@ public class GameLogicComponent : MonoBehaviour
         _stepCountdown = Mathf.Max(0.01f, secondsPerAction);
         _loggedCompletion = false;
         _presentedTranscriptBatchCount = 0;
+        _presented3DTranscriptBatchCount = 0;
+
+        EnsureDummy3DPresenter()?.ResetPresentation(_engine.GetDefinition(), _match);
 
         Debug.Log($"Started match. Phase: {_match.progression.currentPhaseKey}, current player id: {_match.progression.currentPlayerId}");
         DrainTranscript();
@@ -129,6 +139,22 @@ public class GameLogicComponent : MonoBehaviour
         {
             QuantumConsole.Instance.LogToConsole(messages[index]);
         }
+
+        EnsureDummy3DPresenter()?.PresentNewPublicBatches(_engine.GetDefinition(), _match, ref _presented3DTranscriptBatchCount);
+    }
+
+    private Dummy3DTranscriptPresenter EnsureDummy3DPresenter()
+    {
+        if (dummy3DPresenter != null)
+            return dummy3DPresenter;
+
+        dummy3DPresenter = FindObjectOfType<Dummy3DTranscriptPresenter>();
+        if (dummy3DPresenter != null)
+            return dummy3DPresenter;
+
+        GameObject presenterObject = new("Dummy3DPresenter");
+        dummy3DPresenter = presenterObject.AddComponent<Dummy3DTranscriptPresenter>();
+        return dummy3DPresenter;
     }
 }
 

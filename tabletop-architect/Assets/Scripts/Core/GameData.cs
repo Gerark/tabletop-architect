@@ -99,6 +99,7 @@ namespace TTA.Core
         public string key = string.Empty;
         public PropertyDefinition[] properties = Array.Empty<PropertyDefinition>();
         public SlotDefinition[] slots = Array.Empty<SlotDefinition>();
+        public AreaPresentationDefinition presentation = new();
     }
 
     [Serializable]
@@ -144,6 +145,7 @@ namespace TTA.Core
         public PropertyDefinition[] properties = Array.Empty<PropertyDefinition>();
         public AreaDefinition[] ownedAreas = Array.Empty<AreaDefinition>();
         public TopologyDefinition[] topologies = Array.Empty<TopologyDefinition>();
+        public ElementPresentationDefinition presentation = new();
     }
 
     [Serializable]
