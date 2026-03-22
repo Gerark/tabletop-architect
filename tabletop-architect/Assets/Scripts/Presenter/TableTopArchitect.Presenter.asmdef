@@ -1,0 +1,16 @@
+{
+    "name": "TTA",
+    "rootNamespace": "",
+    "references": [
+        "GUID:add67ee4c5bfab1448b0b55b8ec32f6d"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

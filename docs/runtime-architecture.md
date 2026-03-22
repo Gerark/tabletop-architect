@@ -1064,3 +1064,90 @@ This architecture deliberately favors:
 - one consistent runtime state model across match, players, elements, and areas
 
 It is meant to support a first serious gameplay runtime, not every future feature at once.
+
+---
+
+## Addendum: Incremental Runtime Extension Slice
+
+The next runtime slice extends the current controller-centric flow without replacing it.
+
+### A. Visualization stays non-authoritative
+
+- runtime state remains the source of truth
+- transcript and interaction data are produced by runtime, not by presentation
+- presentation is free to animate, delay, or gate input locally
+- runtime resolution does not wait on animation playback
+
+The first adapter can stay text-based. Unity presentation should remain optional and layered on top.
+
+### B. Transcript batches
+
+The runtime now treats a transcript as an ordered record for one resolution pass.
+
+Rules:
+
+- use the term `Transcript`
+- keep transcript data flat and serializable
+- use many `TranscriptBatch` instances over time
+- each batch contains a flat ordered list of `TranscriptEntry`
+- a batch ends when runtime reaches `WaitingForPlayerAction`
+- a batch also ends when runtime reaches `WaitingForReaction`
+- a batch may carry metadata such as stop reason and interaction window id
+
+The runtime may collect raw transcript entries during resolution, then materialize observer-specific batches when the wait boundary is reached.
+
+### C. Interaction windows
+
+Waiting states are now explicit runtime windows, not just implicit controller moments.
+
+Rules:
+
+- every waiting boundary creates a unique interaction window id
+- submitted input must reference that window id
+- stale input is rejected
+- `WaitingForPlayerAction` identifies the acting player for that window
+- `WaitingForReaction` identifies the eligible reacting players for that window
+- legal actions and reactions are always re-evaluated from current authoritative state
+
+This keeps the current action model intact while making wait boundaries safe and resumable.
+
+### D. Reaction waits
+
+Reactions are treated as another wait boundary rather than a separate execution architecture.
+
+Rules:
+
+- only open `WaitingForReaction` if at least one legal reaction exists
+- if no legal reaction exists, continue resolution immediately
+- if multiple players can react, first valid submission wins
+- a chosen reaction may queue the next phase and hand the next action window to the reacting player
+
+This remains additive to the current phase/action/event loop.
+
+### E. Checkpoint history
+
+Undo/redo is checkpoint-based and linear.
+
+Rules:
+
+- create a checkpoint at every `WaitingForPlayerAction`
+- create a checkpoint at every `WaitingForReaction`
+- keep exact RNG state in the checkpointed data
+- use incremental top-level diffs between checkpoints
+- do not restore old transcript playback as part of history restore
+- if the user undoes and then continues differently, discard the future branch
+
+The current slice favors top-level segment diffs over a broad rewrite of the runtime state model.
+
+### F. Observer-safe transcript materialization
+
+Hidden information is owned by runtime filtering, not by UI heuristics.
+
+Rules:
+
+- keep stable public runtime ids even when content is hidden
+- hide secret content, not object existence
+- materialize observer-specific transcript batches immediately at the wait boundary
+- let transcript entries carry public fields plus observer-specific overrides when needed
+
+The first slice can start with conservative owner/private redaction hooks and expand from there without changing the batch model.
