@@ -8,6 +8,9 @@ Prioritize clean architecture, serializable runtime data, and incremental implem
 - Authoritative runtime state must be plain serializable data.
 - Use ids/handles, never runtime object references as source of truth.
 - Use dense containers plus monotonic ids.
+- Treat allocations and memory as first-class runtime constraints.
+- Do not allocate temporary objects, collections, or snapshot-shaped data only to compare state or detect changes.
+- Snapshot, checkpoint, save/load, and comparison paths must prefer direct state inspection, reusable buffers, and persistent data designed for low-allocation access.
 - Do not use nullable `?` modeling for runtime state.
 - Properties are persistent state.
 - Temps are temporary/helper state.
@@ -21,6 +24,7 @@ Prioritize clean architecture, serializable runtime data, and incremental implem
 
 ## Coding rules
 - Keep changes incremental and easy to review.
+- Consider allocation cost, memory lifetime, and reuse strategy for every runtime-related change.
 - Prefer extending existing structures over inventing parallel systems.
 - Ask before broad refactors.
 - Preserve backward compatibility where reasonable.
