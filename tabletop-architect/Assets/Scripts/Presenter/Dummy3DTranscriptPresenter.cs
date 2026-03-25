@@ -1,4 +1,6 @@
+using System;
 using System.Collections.Generic;
+using System.IO;
 using TTA.Core;
 using UnityEngine;
 
@@ -9,10 +11,19 @@ namespace TTA.Presenter
         [SerializeField] private float moveSpeed = 10f;
         [SerializeField] private float rotationSpeed = 720f;
 
+        private static readonly int MainTexturePropertyId = Shader.PropertyToID("_MainTex");
+        private static readonly int BaseMapPropertyId = Shader.PropertyToID("_BaseMap");
+        private static readonly int ColorPropertyId = Shader.PropertyToID("_Color");
+        private static readonly int BaseColorPropertyId = Shader.PropertyToID("_BaseColor");
+        private static readonly Quaternion UpPlacementReferenceInverse = Quaternion.Inverse(BuildAreaRotation(Vector3.up));
+
         private readonly Dictionary<int, AreaVisual> _visualsByAreaId = new();
         private readonly Dictionary<int, ElementVisual> _visualsByElementId = new();
+        private readonly Dictionary<string, Material> _materialPresetsByKey = new(StringComparer.Ordinal);
+        private readonly Dictionary<string, Texture2D> _textureCache = new(StringComparer.Ordinal);
         private GameDefinition _definition;
         private MatchState _match;
+        private PresentationResourceResolver _resourceResolver = new(string.Empty, new PresentationResourceManifest());
         private Transform _areasRoot;
         private Transform _elementsRoot;
 
@@ -32,6 +43,9 @@ namespace TTA.Presenter
             public Transform transform;
             public MeshRenderer renderer;
             public TextMesh label;
+            public Material defaultMaterial;
+            public MaterialPropertyBlock propertyBlock;
+            public Color baseColor = Color.white;
             public Vector3 targetPosition;
             public Quaternion targetRotation = Quaternion.identity;
             public bool hasInitializedPose;
@@ -40,6 +54,11 @@ namespace TTA.Presenter
         private void Awake()
         {
             EnsureRoots();
+        }
+
+        private void OnDestroy()
+        {
+            ClearTextureCache();
         }
 
         private void Update()
@@ -78,6 +97,35 @@ namespace TTA.Presenter
             EnsureRoots();
             ClearAllVisuals();
             RefreshFromMatch();
+        }
+
+        public void SetResourceResolver(PresentationResourceResolver resourceResolver)
+        {
+            _resourceResolver = resourceResolver ?? new PresentationResourceResolver(string.Empty, new PresentationResourceManifest());
+            ClearTextureCache();
+
+            if (_match != null)
+                RefreshFromMatch();
+        }
+
+        public void SetMaterialPresets(Dummy3DMaterialPreset[] presets)
+        {
+            _materialPresetsByKey.Clear();
+
+            if (presets != null)
+            {
+                for (int index = 0; index < presets.Length; index++)
+                {
+                    Dummy3DMaterialPreset preset = presets[index];
+                    if (preset == null || string.IsNullOrWhiteSpace(preset.key) || preset.material == null)
+                        continue;
+
+                    _materialPresetsByKey[preset.key] = preset.material;
+                }
+            }
+
+            if (_match != null)
+                RefreshFromMatch();
         }
 
         public void PresentNewPublicBatches(GameDefinition definition, MatchState match, ref int nextBatchIndex)
@@ -172,7 +220,7 @@ namespace TTA.Presenter
             ElementPresentationDefinition presentation = GetElementPresentation(GetElementDefinition(element));
 
             visual.transform.position = ResolveElementPosition(fromAreaId, presentation.localOffset);
-            visual.transform.rotation = ResolveElementRotation(fromAreaId, presentation.localEulerAngles);
+            visual.transform.rotation = ResolveElementRotation(fromAreaId, presentation);
             visual.targetPosition = visual.transform.position;
             visual.targetRotation = visual.transform.rotation;
             visual.hasInitializedPose = true;
@@ -337,7 +385,7 @@ namespace TTA.Presenter
             Vector3 localOffset = (areaPresentation.itemOffset * orderIndex) + elementPresentation.localOffset;
 
             visual.targetPosition = ResolveElementPosition(area.id, localOffset);
-            visual.targetRotation = ResolveElementRotation(area.id, elementPresentation.localEulerAngles);
+            visual.targetRotation = ResolveElementRotation(area.id, elementPresentation);
         }
 
         private AreaVisual EnsureAreaVisual(int areaId)
@@ -395,8 +443,6 @@ namespace TTA.Presenter
                 Destroy(collider);
 
             MeshRenderer renderer = visualObject.GetComponent<MeshRenderer>();
-            if (renderer != null)
-                renderer.material.color = presentation.color;
 
             ElementVisual visual = new()
             {
@@ -404,9 +450,15 @@ namespace TTA.Presenter
                 gameObject = visualObject,
                 transform = visualObject.transform,
                 renderer = renderer,
+                defaultMaterial = renderer != null ? renderer.sharedMaterial : null,
+                propertyBlock = renderer != null ? new MaterialPropertyBlock() : null,
+                baseColor = presentation.color,
                 targetPosition = visualObject.transform.position,
                 targetRotation = visualObject.transform.rotation
             };
+
+            ApplyMaterialPreset(visual, presentation.materialKey);
+            ApplyAppearanceOverrides(visual, presentation, null);
 
             if (definition.randomDistribution != RandomDistribution.None)
                 visual.label = CreateLabel(visualObject.transform, presentation.localScale);
@@ -434,22 +486,24 @@ namespace TTA.Presenter
 
         private void UpdateLabelFromRuntime(ElementVisual visual, RuntimeElementRecord element)
         {
-            if (visual?.label == null)
-                return;
-
             ElementDefinition definition = GetElementDefinition(element);
+            ElementPresentationDefinition presentation = GetElementPresentation(definition);
+            ApplyMaterialPreset(visual, presentation.materialKey);
+
             if (element.currentFaceIndex < 0 || element.currentFaceIndex >= definition.faces.Length)
             {
+                ApplyAppearanceOverrides(visual, presentation, null);
                 ApplyLabelValue(visual, string.Empty);
                 return;
             }
 
             ElementFaceDefinition face = definition.faces[element.currentFaceIndex];
+            bool hasTexture = ApplyAppearanceOverrides(visual, presentation, face);
             string labelValue = face.numericValue > 0
                 ? face.numericValue.ToString()
                 : face.id ?? string.Empty;
 
-            ApplyLabelValue(visual, labelValue);
+            ApplyLabelValue(visual, hasTexture ? string.Empty : labelValue);
         }
 
         private void ApplyLabelValue(ElementVisual visual, string value)
@@ -469,14 +523,15 @@ namespace TTA.Presenter
             return areaVisual.transform.TransformPoint(localOffset);
         }
 
-        private Quaternion ResolveElementRotation(int areaId, Vector3 localEulerAngles)
+        private Quaternion ResolveElementRotation(int areaId, ElementPresentationDefinition presentation)
         {
             AreaVisual areaVisual = EnsureAreaVisual(areaId);
-            Quaternion localRotation = Quaternion.Euler(localEulerAngles);
+            Quaternion localRotation = Quaternion.Euler(presentation?.localEulerAngles ?? Vector3.zero);
             if (areaVisual?.transform == null)
                 return localRotation;
 
-            return areaVisual.transform.rotation * localRotation;
+            Quaternion areaRotation = areaVisual.transform.rotation;
+            return areaRotation * UpPlacementReferenceInverse * localRotation;
         }
 
         private Transform ResolveAreaParent(RuntimeAreaRecord area)
@@ -620,6 +675,126 @@ namespace TTA.Presenter
             return false;
         }
 
+        private void ApplyMaterialPreset(ElementVisual visual, string materialKey)
+        {
+            if (visual?.renderer == null)
+                return;
+
+            Material targetMaterial = ResolveMaterial(materialKey) ?? visual.defaultMaterial;
+            if (visual.renderer.sharedMaterial != targetMaterial)
+                visual.renderer.sharedMaterial = targetMaterial;
+        }
+
+        private bool ApplyAppearanceOverrides(
+            ElementVisual visual,
+            ElementPresentationDefinition presentation,
+            ElementFaceDefinition face)
+        {
+            if (visual?.renderer == null || visual.propertyBlock == null)
+                return false;
+
+            Material material = visual.renderer.sharedMaterial;
+            Texture2D texture = ResolveFaceTexture(face);
+
+            visual.baseColor = presentation.color;
+            visual.propertyBlock.Clear();
+            visual.renderer.GetPropertyBlock(visual.propertyBlock);
+            bool textureApplied = false;
+            if (texture != null)
+            {
+                textureApplied = ApplyTextureOverride(material, visual.propertyBlock, texture);
+            }
+            Color tint = textureApplied ? Color.white : presentation.color;
+            ApplyColorOverride(material, visual.propertyBlock, tint);
+            visual.renderer.SetPropertyBlock(visual.propertyBlock);
+            return textureApplied;
+        }
+
+        private Texture2D ResolveFaceTexture(ElementFaceDefinition face)
+        {
+            string textureKey = face?.presentation?.textureKey;
+            if (string.IsNullOrWhiteSpace(textureKey))
+                return null;
+
+            if (_textureCache.TryGetValue(textureKey, out Texture2D cachedTexture))
+                return cachedTexture;
+
+            if (_resourceResolver == null ||
+                !_resourceResolver.TryResolveResourcePath(textureKey, PresentationResourceKind.Texture, out string texturePath))
+            {
+                return null;
+            }
+
+            byte[] imageBytes = File.ReadAllBytes(texturePath);
+            Texture2D texture = new(2, 2, TextureFormat.RGBA32, false);
+            if (!texture.LoadImage(imageBytes, false))
+            {
+                Destroy(texture);
+                return null;
+            }
+
+            texture.name = Path.GetFileNameWithoutExtension(texturePath);
+            texture.wrapMode = TextureWrapMode.Clamp;
+            texture.filterMode = FilterMode.Bilinear;
+            _textureCache[textureKey] = texture;
+            return texture;
+        }
+
+        private Material ResolveMaterial(string materialKey)
+        {
+            if (string.IsNullOrWhiteSpace(materialKey))
+                return null;
+
+            return _materialPresetsByKey.TryGetValue(materialKey, out Material material)
+                ? material
+                : null;
+        }
+
+        private static bool ApplyTextureOverride(Material material, MaterialPropertyBlock propertyBlock, Texture texture)
+        {
+            if (propertyBlock == null)
+                return false;
+
+            if (material == null)
+            {
+                propertyBlock.SetTexture(MainTexturePropertyId, texture);
+                return texture != null;
+            }
+
+            bool applied = false;
+            if (material.HasProperty(MainTexturePropertyId))
+            {
+                propertyBlock.SetTexture(MainTexturePropertyId, texture);
+                applied = texture != null;
+            }
+
+            if (material.HasProperty(BaseMapPropertyId))
+            {
+                propertyBlock.SetTexture(BaseMapPropertyId, texture);
+                applied = texture != null || applied;
+            }
+
+            return applied;
+        }
+
+        private static void ApplyColorOverride(Material material, MaterialPropertyBlock propertyBlock, Color color)
+        {
+            if (propertyBlock == null)
+                return;
+
+            if (material == null)
+            {
+                propertyBlock.SetColor(ColorPropertyId, color);
+                return;
+            }
+
+            if (material.HasProperty(ColorPropertyId))
+                propertyBlock.SetColor(ColorPropertyId, color);
+
+            if (material.HasProperty(BaseColorPropertyId))
+                propertyBlock.SetColor(BaseColorPropertyId, color);
+        }
+
         private void DestroyAreaVisual(int areaId)
         {
             if (!_visualsByAreaId.TryGetValue(areaId, out AreaVisual visual))
@@ -668,6 +843,17 @@ namespace TTA.Presenter
             }
 
             _visualsByElementId.Clear();
+        }
+
+        private void ClearTextureCache()
+        {
+            foreach (Texture2D texture in _textureCache.Values)
+            {
+                if (texture != null)
+                    Destroy(texture);
+            }
+
+            _textureCache.Clear();
         }
 
         private void EnsureRoots()

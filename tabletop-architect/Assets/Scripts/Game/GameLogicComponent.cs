@@ -1,4 +1,5 @@
 using QFSW.QC;
+using System;
 using System.Collections.Generic;
 using TTA.Core;
 using TTA.Presenter;
@@ -9,14 +10,19 @@ namespace TTA.Game
 
 public class GameLogicComponent : MonoBehaviour
 {
+    [SerializeField] private GameContentLoadMode contentLoadMode = GameContentLoadMode.CodeDefined;
+    [SerializeField] private string contentRootPath = string.Empty;
     [SerializeField] private int playerCount = 4;
     [SerializeField] private int seed = 1234;
     [SerializeField] private bool autoAdvance = true;
     [SerializeField] private float secondsPerAction = 1.0f;
+    [SerializeField] private Dummy3DMaterialPreset[] dummyMaterialPresets = Array.Empty<Dummy3DMaterialPreset>();
     [SerializeField] private Dummy3DTranscriptPresenter dummy3DPresenter;
 
     private Engine _engine;
     private MatchState _match;
+    private LoadedGameContent _loadedContent;
+    private LoadedGameContent _configuredContent;
     private readonly TextTranscriptPresenter _transcriptPresenter = new();
     private float _stepCountdown;
     private bool _loggedCompletion;
@@ -62,17 +68,35 @@ public class GameLogicComponent : MonoBehaviour
 
     public void StartNewMatch()
     {
-        _engine = new Engine(Sample.CreateMonopolyDefinition());
+        _loadedContent = ResolveGameContent();
+        _engine = new Engine(_loadedContent.definition);
         _match = _engine.CreateMatch("default_ruleset", playerCount, seed);
         _stepCountdown = Mathf.Max(0.01f, secondsPerAction);
         _loggedCompletion = false;
         _presentedTranscriptBatchCount = 0;
         _presented3DTranscriptBatchCount = 0;
 
-        EnsureDummy3DPresenter()?.ResetPresentation(_engine.GetDefinition(), _match);
+        Dummy3DTranscriptPresenter presenter = EnsureDummy3DPresenter();
+        presenter?.SetMaterialPresets(dummyMaterialPresets);
+        presenter?.SetResourceResolver(_loadedContent.resourceResolver);
+        presenter?.ResetPresentation(_engine.GetDefinition(), _match);
 
         Debug.Log($"Started match. Phase: {_match.progression.currentPhaseKey}, current player id: {_match.progression.currentPlayerId}");
         DrainTranscript();
+    }
+
+    public void ConfigureCodeContent(
+        GameDefinition definition,
+        PresentationResourceManifest resources = null,
+        string resourceRootPath = "",
+        PresentationPackageManifest package = null)
+    {
+        _configuredContent = GameContentLoader.CreateGameContent(definition, resources, resourceRootPath, package);
+    }
+
+    public void ConfigurePackageContent(string packageRootPath)
+    {
+        _configuredContent = GameContentLoader.LoadFromPackageDirectory(packageRootPath);
     }
 
     public void StepOnce()
@@ -143,12 +167,47 @@ public class GameLogicComponent : MonoBehaviour
         EnsureDummy3DPresenter()?.PresentNewPublicBatches(_engine.GetDefinition(), _match, ref _presented3DTranscriptBatchCount);
     }
 
+    private LoadedGameContent ResolveGameContent()
+    {
+        if (_configuredContent != null)
+            return _configuredContent;
+
+        if (contentLoadMode == GameContentLoadMode.PackageFolder)
+        {
+            if (string.IsNullOrWhiteSpace(contentRootPath))
+            {
+                Debug.LogWarning("PackageFolder mode requires a content root path. Falling back to code-defined sample content.");
+                return CreateSampleContent();
+            }
+
+            try
+            {
+                return GameContentLoader.LoadFromPackageDirectory(contentRootPath);
+            }
+            catch (System.Exception exception)
+            {
+                Debug.LogError($"Failed to load package content from '{contentRootPath}'. Falling back to code-defined sample content.\n{exception}");
+                return CreateSampleContent();
+            }
+        }
+
+        return CreateSampleContent();
+    }
+
+    private LoadedGameContent CreateSampleContent()
+    {
+        return GameContentLoader.CreateGameContent(
+            Sample.CreateMonopolyDefinition(),
+            Sample.CreateMonopolyResources(),
+            contentRootPath);
+    }
+
     private Dummy3DTranscriptPresenter EnsureDummy3DPresenter()
     {
         if (dummy3DPresenter != null)
             return dummy3DPresenter;
 
-        dummy3DPresenter = FindObjectOfType<Dummy3DTranscriptPresenter>();
+        dummy3DPresenter = FindFirstObjectByType<Dummy3DTranscriptPresenter>();
         if (dummy3DPresenter != null)
             return dummy3DPresenter;
 

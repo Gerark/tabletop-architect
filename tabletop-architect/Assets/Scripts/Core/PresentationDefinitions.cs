@@ -13,12 +13,19 @@ namespace TTA.Core
     }
 
     [Serializable]
+    public sealed class ElementFacePresentationDefinition
+    {
+        public string textureKey = string.Empty;
+    }
+
+    [Serializable]
     public sealed class ElementPresentationDefinition
     {
         public PresentationPrimitiveKind primitive = PresentationPrimitiveKind.Cube;
         public Vector3 localScale = Vector3.one;
         public Vector3 localOffset = Vector3.zero;
         public Vector3 localEulerAngles = Vector3.zero;
+        public string materialKey = string.Empty;
         public Color color = Color.gray;
     }
 

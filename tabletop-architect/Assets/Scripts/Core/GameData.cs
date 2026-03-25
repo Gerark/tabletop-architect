@@ -82,6 +82,7 @@ namespace TTA.Core
         public string id = string.Empty;
         public int numericValue;
         public bool isDefault;
+        public ElementFacePresentationDefinition presentation = new();
     }
 
     [Serializable]

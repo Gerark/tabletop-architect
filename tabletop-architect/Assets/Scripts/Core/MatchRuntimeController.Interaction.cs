@@ -76,11 +76,11 @@ namespace TTA.Core
             BeginTranscriptBatch(match);
             RecordActionSubmitted(match, actionKey, actorPlayerId, windowId);
 
-            ClearCurrentWindow(match);
+            match.ClearWindow();
             match.execution.mode = MatchExecutionMode.Resolving;
             match.execution.resolvingPlayerId = actorPlayerId;
 
-            ExecuteOperations(match, selectedAction.operations, context);
+            ExecuteOperations(match, selectedAction.operations, context, resolver);
             FinishResolution(match);
         }
 
@@ -121,7 +121,7 @@ namespace TTA.Core
             RecordReactionSubmitted(match, reactionKey, playerId, windowId);
 
             EventPayload reactionSource = RuntimeDataClone.Clone(match.execution.currentEvent) ?? new EventPayload();
-            ClearCurrentWindow(match);
+            match.ClearWindow();
             match.execution.mode = MatchExecutionMode.Resolving;
             match.execution.resolvingPlayerId = playerId;
 
@@ -132,7 +132,8 @@ namespace TTA.Core
                 eventTemps = new ValueMap()
             };
 
-            ExecuteOperations(match, selectedReaction.operations, context);
+            RuntimeBindingResolver resolver = context.CreateResolver(_definition, match);
+            ExecuteOperations(match, selectedReaction.operations, context, resolver);
 
             if (!string.IsNullOrWhiteSpace(selectedReaction.nextPhase))
             {
@@ -301,11 +302,6 @@ namespace TTA.Core
             RecordWaitOpened(match, window, TranscriptStopReason.WaitingForReaction);
             FlushTranscriptBatch(match, TranscriptStopReason.WaitingForReaction, window);
             CaptureCurrentCheckpoint(match);
-        }
-
-        private void ClearCurrentWindow(MatchState match)
-        {
-            match.interaction.currentWindow = new InteractionWindow();
         }
 
         private int ResolveActionWindowPlayerId(MatchState match)

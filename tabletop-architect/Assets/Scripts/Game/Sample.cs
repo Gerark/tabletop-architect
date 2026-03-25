@@ -2,11 +2,18 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using TTA.Core;
+using TTA.Presenter;
 
 namespace TTA.Game
 {
     public static class Sample
     {
+        private const string BoardMaterialKey = "dummy.board";
+        private const string DieMaterialKey = "dummy.die";
+        private const string PawnMaterialKey = "dummy.pawn";
+        private const string CardMaterialKey = "dummy.card";
+        private const string TokenMaterialKey = "dummy.token";
+
         public static GameDefinition CreateMonopolyDefinition()
         {
             string[] boardTrack =
@@ -277,6 +284,17 @@ namespace TTA.Game
             return definition;
         }
 
+        public static PresentationResourceManifest CreateMonopolyResources()
+        {
+            return new PresentationResourceManifest
+            {
+                entries = new[]
+                {
+                    CreateTextureResource("boardTexture", "textures/board.jpg"),
+                }
+            };
+        }
+
         private static ElementDefinition CreateDieDefinition()
         {
             return new ElementDefinition
@@ -289,7 +307,8 @@ namespace TTA.Game
                     PresentationPrimitiveKind.Cube,
                     new Vector3(0.7f, 0.7f, 0.7f),
                     new Color(0.96f, 0.94f, 0.87f),
-                    new Vector3(0f, 0f, -0.1f)),
+                    new Vector3(0f, 0f, -0.1f),
+                    materialKey: DieMaterialKey),
                 faces = new[]
                 {
                     CreateFace("1", 1, true),
@@ -372,12 +391,13 @@ namespace TTA.Game
                 randomDistribution = RandomDistribution.None,
                 presentation = CreateElementPresentation(
                     PresentationPrimitiveKind.Cube,
-                    new Vector3(5.6f, 5.6f, 0.2f),
+                    new Vector3(5.6f, 0.2f, 5.6f),
                     new Color(0.75f, 0.66f, 0.46f),
-                    Vector3.zero),
+                    Vector3.zero,
+                    materialKey: BoardMaterialKey),
                 faces = new[]
                 {
-                    CreateFace("default", 1, true)
+                    CreateFace("default", 1, true, "boardTexture")
                 },
                 ownedAreas = ownedAreas.ToArray(),
                 topologies = new[]
@@ -491,13 +511,22 @@ namespace TTA.Game
             };
         }
 
-        private static ElementFaceDefinition CreateFace(string id, int numericValue, bool isDefault = false)
+        private static ElementFaceDefinition CreateFace(string id, int numericValue, bool isDefault = false, string textureKey = null)
         {
             return new ElementFaceDefinition
             {
                 id = id,
                 numericValue = numericValue,
-                isDefault = isDefault
+                isDefault = isDefault,
+                presentation = CreateFacePresentation(textureKey)
+            };
+        }
+
+        private static ElementFacePresentationDefinition CreateFacePresentation(string textureKey)
+        {
+            return new ElementFacePresentationDefinition
+            {
+                textureKey = textureKey ?? string.Empty
             };
         }
 
@@ -541,15 +570,17 @@ namespace TTA.Game
             Vector3 scale,
             Color color,
             Vector3 localOffset,
-            Vector3 localEulerAngles = default)
+            Vector3 localEulerAngles = default,
+            string materialKey = null)
         {
             return new ElementPresentationDefinition
             {
                 primitive = primitive,
                 localScale = scale,
-                color = color,
                 localOffset = localOffset,
-                localEulerAngles = localEulerAngles
+                localEulerAngles = localEulerAngles,
+                materialKey = materialKey ?? string.Empty,
+                color = color
             };
         }
 
@@ -589,9 +620,10 @@ namespace TTA.Game
 
             return CreateElementPresentation(
                 PresentationPrimitiveKind.Capsule,
-                new Vector3(0.38f, 0.6f, 0.38f),
+                new Vector3(0.19f, 0.3f, 0.19f),
                 color,
-                new Vector3(0f, 0f, -0.2f));
+                Vector3.zero,
+                materialKey: PawnMaterialKey);
         }
 
         private static ElementPresentationDefinition CreateCardPresentation(Color color)
@@ -600,7 +632,8 @@ namespace TTA.Game
                 PresentationPrimitiveKind.Cube,
                 new Vector3(0.55f, 0.8f, 0.08f),
                 color,
-                new Vector3(0f, 0f, -0.08f));
+                new Vector3(0f, 0f, -0.08f),
+                materialKey: CardMaterialKey);
         }
 
         private static ElementPresentationDefinition CreateDefaultTokenPresentation()
@@ -609,47 +642,90 @@ namespace TTA.Game
                 PresentationPrimitiveKind.Cube,
                 new Vector3(0.35f, 0.35f, 0.2f),
                 new Color(0.82f, 0.72f, 0.5f),
-                new Vector3(0f, 0f, -0.08f));
+                new Vector3(0f, 0f, -0.08f),
+                materialKey: TokenMaterialKey);
         }
 
         private static AreaPresentationDefinition CreateBoardTrackAreaPresentation(int index)
         {
-            const float edge = 2.25f;
+            float edge = 0.4125f;
             const float stepCount = 10f;
             float x;
             float y;
+            float w = 0.13f;
+            float h = 0.08f;
+            float offsetPos = 0.025f;
 
-            if (index <= 10)
+            if (index % 10 == 0)
+            {
+                edge += offsetPos;
+                x = index switch
+                {
+                    0 => edge,
+                    10 => -edge,
+                    20 => -edge,
+                    30 => edge,
+                    _ => 0f
+                };
+                y = index switch
+                {
+                    0 => -edge,
+                    10 => -edge,
+                    20 => edge,
+                    30 => edge,
+                    _ => 0f
+                };
+                return CreateAreaPresentation(
+                    new Vector3(x, 0f, y),
+                    Vector3.zero,
+                    Vector3.up,
+                    true,
+                    new Vector3(0.13f, 0.13f, 0.1f));
+            }
+
+            if (index < 10)
             {
                 float t = index / stepCount;
                 x = Mathf.Lerp(edge, -edge, t);
-                y = -edge;
+                y = -edge - offsetPos;
             }
-            else if (index <= 20)
+            else if (index < 20)
             {
                 float t = (index - 10) / stepCount;
-                x = -edge;
+                x = -edge - offsetPos;
                 y = Mathf.Lerp(-edge, edge, t);
+                (w, h) = (h, w);
             }
-            else if (index <= 30)
+            else if (index < 30)
             {
                 float t = (index - 20) / stepCount;
                 x = Mathf.Lerp(-edge, edge, t);
-                y = edge;
+                y = edge + offsetPos;
             }
             else
             {
                 float t = (index - 30) / stepCount;
-                x = edge;
+                x = edge + offsetPos;
                 y = Mathf.Lerp(edge, -edge, t);
+                (w, h) = (h, w);
             }
 
             return CreateAreaPresentation(
-                new Vector3(x, y, 0f),
-                new Vector3(0.18f, 0.18f, -0.02f),
+                new Vector3(x, 0f, y),
                 Vector3.zero,
+                Vector3.up,
                 true,
-                new Vector3(0.65f, 0.65f, 0.6f));
+                new Vector3(w, h, 0.1f));
+        }
+
+        private static PresentationResourceEntry CreateTextureResource(string key, string path)
+        {
+            return new PresentationResourceEntry
+            {
+                key = key,
+                kind = PresentationResourceKind.Texture,
+                path = path
+            };
         }
     }
 }

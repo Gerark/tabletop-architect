@@ -129,6 +129,7 @@ GameObject:
   m_Component:
   - component: {fileID: 24893156}
   - component: {fileID: 24893155}
+  - component: {fileID: 24893157}
   m_Layer: 0
   m_Name: GameLogic
   m_TagString: Untagged
@@ -148,10 +149,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5bc95eb1dc6722541a1de1effd3e1e3a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: '::'
+  contentLoadMode: 0
+  contentRootPath: C:\Data\Development\Gamedev\Unity\Tabletop Architect\tabletop-architect\samples\fakemonopoly
   playerCount: 2
   seed: 1234
   autoAdvance: 1
-  secondsPerAction: 0.1
+  secondsPerAction: 5
+  dummyMaterialPresets:
+  - key: dummy.board
+    material: {fileID: 2100000, guid: 6cd5dd01329d20146b93f415161baa6f, type: 2}
+  dummy3DPresenter: {fileID: 24893157}
 --- !u!4 &24893156
 Transform:
   m_ObjectHideFlags: 0
@@ -167,6 +174,20 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &24893157
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 24893154}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c6e8dfd1af3a4a49925095d51932f8a7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: TTA::TTA.Presenter.Dummy3DTranscriptPresenter
+  moveSpeed: 5
+  rotationSpeed: 720
 --- !u!1 &330585543
 GameObject:
   m_ObjectHideFlags: 0

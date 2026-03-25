@@ -5,7 +5,7 @@ namespace TTA.Core
 {
     public sealed partial class MatchRuntimeController
     {
-        private void ExecuteOperations(MatchState match, OperationDefinition[] operations, ExecutionContext context)
+        private void ExecuteOperations(MatchState match, OperationDefinition[] operations, ExecutionContext context, RuntimeBindingResolver resolver)
         {
             if (operations == null)
                 return;
@@ -25,7 +25,6 @@ namespace TTA.Core
                     continue;
                 }
 
-                RuntimeBindingResolver resolver = context.CreateResolver(_definition, match);
                 if (!ConditionEvaluator.Evaluate(operation.when, resolver))
                     continue;
 

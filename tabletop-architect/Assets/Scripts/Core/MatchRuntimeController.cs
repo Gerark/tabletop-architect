@@ -83,7 +83,9 @@ namespace TTA.Core
             BeginTranscriptBatch(match);
             match.execution.mode = MatchExecutionMode.Resolving;
 
-            ExecuteOperations(match, ruleset.setup.steps, new ExecutionContext());
+            var context = new ExecutionContext();
+
+            ExecuteOperations(match, ruleset.setup.steps, context, context.CreateResolver(_definition, match));
 
             if (!match.progression.ended && !string.IsNullOrWhiteSpace(ruleset.play.startPhase))
                 match.execution.queuedNextPhase = ruleset.play.startPhase;
@@ -194,7 +196,7 @@ namespace TTA.Core
             if (match.progression.ended)
             {
                 ClearResolutionState(match);
-                ClearCurrentWindow(match);
+                match.ClearWindow();
                 match.execution.resolvingPlayerId = RuntimeIds.InvalidId;
                 match.execution.mode = MatchExecutionMode.Ended;
                 RecordMatchEnded(match);
@@ -234,7 +236,7 @@ namespace TTA.Core
                     if (!ConditionEvaluator.Evaluate(rule.when, resolver))
                         continue;
 
-                    ExecuteOperations(match, rule.operations, context);
+                    ExecuteOperations(match, rule.operations, context, resolver);
                     if (match.progression.ended)
                         return false;
 

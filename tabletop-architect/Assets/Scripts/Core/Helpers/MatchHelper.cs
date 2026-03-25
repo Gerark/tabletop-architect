@@ -4,6 +4,18 @@ namespace TTA.Core
 {
     public static class MatchHelper
     {
+        public static void ClearWindow(this MatchState match)
+        {
+            match.interaction.currentWindow.primaryPlayerId = RuntimeIds.InvalidId;
+            match.interaction.currentWindow.id = RuntimeIds.InvalidId;
+            match.interaction.currentWindow.kind = InteractionWindowKind.None;
+            match.interaction.currentWindow.primaryPlayerId = RuntimeIds.InvalidId;
+            match.interaction.currentWindow.phaseKey = string.Empty;
+            match.interaction.currentWindow.sourceTrigger = string.Empty;
+            match.interaction.currentWindow.eligiblePlayerIds.Clear();
+            match.interaction.currentWindow.metadata.Clear();
+        }
+
         public static RuntimePlayerRecord GetPlayer(this MatchState match, int playerId)
         {
             for (int index = 0; index < match.players.items.Count; index++)
