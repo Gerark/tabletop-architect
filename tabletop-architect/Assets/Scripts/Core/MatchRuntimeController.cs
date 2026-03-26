@@ -134,7 +134,14 @@ namespace TTA.Core
                     throw new InvalidOperationException($"Duplicate element key '{key}'.");
 
                 _elementIndicesByKey.Add(key, index);
-                ValidateAreaDefinitions(_definition.elements[index].ownedAreas, $"element '{key}'");
+                if (!TryValidateAreaDefinitions(_definition.elements[index].ownedAreas, out AreaDefinitionValidationError areaError, out string areaKey))
+                {
+                    if (areaError == AreaDefinitionValidationError.DuplicateKey)
+                        throw new InvalidOperationException($"Duplicate area key '{areaKey}' in element '{key}'.");
+
+                    throw new InvalidOperationException($"Area '{areaKey}' in element '{key}' must declare exactly one default slot when multiple slots exist.");
+                }
+
                 ValidateTopologyDefinitions(_definition.elements[index]);
             }
 
@@ -147,7 +154,13 @@ namespace TTA.Core
                 _globalAreaIndicesByKey.Add(key, index);
             }
 
-            ValidateAreaDefinitions(_definition.globalAreas, "game definition");
+            if (!TryValidateAreaDefinitions(_definition.globalAreas, out AreaDefinitionValidationError globalAreaError, out string globalAreaKey))
+            {
+                if (globalAreaError == AreaDefinitionValidationError.DuplicateKey)
+                    throw new InvalidOperationException($"Duplicate area key '{globalAreaKey}' in game definition.");
+
+                throw new InvalidOperationException($"Area '{globalAreaKey}' in game definition must declare exactly one default slot when multiple slots exist.");
+            }
 
             for (int index = 0; index < _definition.rulesets.Length; index++)
             {

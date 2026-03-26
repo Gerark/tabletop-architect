@@ -25,6 +25,9 @@ Prioritize clean architecture, serializable runtime data, and incremental implem
 ## Coding rules
 - Keep changes incremental and easy to review.
 - Consider allocation cost, memory lifetime, and reuse strategy for every runtime-related change.
+- Do not precompute strings or labels only for possible error paths.
+- Do not add helper methods whose only purpose is to throw exceptions.
+- Do not introduce static strings/constants only for exception messages; if an error message depends on caller context, throw at the caller instead of passing preformatted exception text down the stack.
 - Prefer extending existing structures over inventing parallel systems.
 - Ask before broad refactors.
 - Preserve backward compatibility where reasonable.

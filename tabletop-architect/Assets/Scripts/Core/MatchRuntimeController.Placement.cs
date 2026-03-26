@@ -138,7 +138,13 @@ namespace TTA.Core
         private void ValidateOwnedContentCreation(ElementDefinition definition)
         {
             ValidateTopologyDefinitions(definition);
-            ValidateAreaDefinitions(definition.ownedAreas, $"element '{definition.key}'");
+            if (!TryValidateAreaDefinitions(definition.ownedAreas, out AreaDefinitionValidationError areaError, out string areaKey))
+            {
+                if (areaError == AreaDefinitionValidationError.DuplicateKey)
+                    throw new InvalidOperationException($"Duplicate area key '{areaKey}' in element '{definition.key}'.");
+
+                throw new InvalidOperationException($"Area '{areaKey}' in element '{definition.key}' must declare exactly one default slot when multiple slots exist.");
+            }
         }
 
         private void EnsureOwnedContentEmpty(MatchState match, int ownerElementId)

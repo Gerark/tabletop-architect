@@ -223,8 +223,15 @@ namespace TTA.Core
             for (int index = 0; index < phase.availableReactions.Length; index++)
             {
                 ReactionDefinition reaction = phase.availableReactions[index];
-                if (!DoesParticipantsAllowPlayer(reaction.participants, resolver, playerId, $"Reaction '{reaction.key}'"))
-                    continue;
+                Value participants = ResolveParticipants(reaction.participants, resolver);
+                if (participants != null)
+                {
+                    if (!IsValidParticipantsValue(participants))
+                        throw new InvalidOperationException($"Reaction '{reaction.key}' participants must resolve to a player id or a collection of player ids.");
+
+                    if (!DoesResolvedParticipantsAllowPlayer(participants, playerId))
+                        continue;
+                }
 
                 if (!ConditionEvaluator.Evaluate(reaction.when, resolver))
                     continue;
@@ -351,20 +358,34 @@ namespace TTA.Core
 
         private bool DoesPhaseAllowPlayer(MatchState match, PhaseDefinition phase, RuntimeBindingResolver resolver, int playerId)
         {
-            return DoesParticipantsAllowPlayer(phase.participants, resolver, playerId, $"Phase '{phase.key}'");
-        }
-
-        private bool DoesParticipantsAllowPlayer(Value participantsValue, RuntimeBindingResolver resolver, int playerId, string label)
-        {
-            if (participantsValue == null || participantsValue.IsNull)
+            Value participants = ResolveParticipants(phase.participants, resolver);
+            if (participants == null)
                 return true;
 
-            Value participants = participantsValue.Resolve(resolver);
+            if (!IsValidParticipantsValue(participants))
+                throw new InvalidOperationException($"Phase '{phase.key}' participants must resolve to a player id or a collection of player ids.");
+
+            return DoesResolvedParticipantsAllowPlayer(participants, playerId);
+        }
+
+        private Value ResolveParticipants(Value participantsValue, RuntimeBindingResolver resolver)
+        {
+            if (participantsValue == null || participantsValue.IsNull)
+                return null;
+
+            return participantsValue.Resolve(resolver);
+        }
+
+        private static bool IsValidParticipantsValue(Value participants)
+        {
+            return participants.kind == ValueKind.PlayerId ||
+                (participants.kind == ValueKind.Collection && participants.collectionItemKind == ValueKind.PlayerId);
+        }
+
+        private static bool DoesResolvedParticipantsAllowPlayer(Value participants, int playerId)
+        {
             if (participants.kind == ValueKind.PlayerId)
                 return participants.idValue == playerId;
-
-            if (participants.kind != ValueKind.Collection || participants.collectionItemKind != ValueKind.PlayerId)
-                throw new InvalidOperationException($"{label} participants must resolve to a player id or a collection of player ids.");
 
             for (int index = 0; index < participants.collectionItems.Count; index++)
             {

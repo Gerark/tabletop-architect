@@ -5,15 +5,28 @@ namespace TTA.Core
 {
     public sealed partial class MatchRuntimeController
     {
-        private void ValidateAreaDefinitions(AreaDefinition[] areas, string ownerLabel)
+        private enum AreaDefinitionValidationError
         {
+            None = 0,
+            DuplicateKey = 1,
+            InvalidDefaultSlotCount = 2
+        }
+
+        private bool TryValidateAreaDefinitions(AreaDefinition[] areas, out AreaDefinitionValidationError error, out string areaKey)
+        {
+            error = AreaDefinitionValidationError.None;
+            areaKey = string.Empty;
             Dictionary<string, bool> seenKeys = new(StringComparer.Ordinal);
             for (int areaIndex = 0; areaIndex < areas.Length; areaIndex++)
             {
                 AreaDefinition area = areas[areaIndex];
                 string key = area.key ?? string.Empty;
                 if (seenKeys.ContainsKey(key))
-                    throw new InvalidOperationException($"Duplicate area key '{key}' in {ownerLabel}.");
+                {
+                    error = AreaDefinitionValidationError.DuplicateKey;
+                    areaKey = key;
+                    return false;
+                }
 
                 seenKeys.Add(key, true);
 
@@ -28,8 +41,14 @@ namespace TTA.Core
                 }
 
                 if (area.slots.Length > 1 && defaultSlots != 1)
-                    throw new InvalidOperationException($"Area '{key}' in {ownerLabel} must declare exactly one default slot when multiple slots exist.");
+                {
+                    error = AreaDefinitionValidationError.InvalidDefaultSlotCount;
+                    areaKey = key;
+                    return false;
+                }
             }
+
+            return true;
         }
 
         private void ValidateTopologyDefinitions(ElementDefinition elementDefinition)
