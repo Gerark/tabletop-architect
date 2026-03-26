@@ -244,6 +244,7 @@ namespace TTA.Core
 
         private RuntimeAreaRecord CreateRuntimeArea(MatchState match, int ownerElementId, int definitionIndex)
         {
+            MatchHistoryTimeline.TrackIdCounters(match);
             AreaDefinition definition = GetAreaDefinition(match, ownerElementId, definitionIndex);
             RuntimeAreaRecord area = new()
             {
@@ -256,6 +257,7 @@ namespace TTA.Core
                 area.properties.Set(definition.properties[propertyIndex].key, GetDefaultValue(definition.properties[propertyIndex]));
 
             match.areas.items.Add(area);
+            MatchHistoryTimeline.TrackAreaAdded(match, area.id);
 
             SlotDefinition[] slotDefinitions = GetEffectiveSlotDefinitions(definition);
             for (int slotIndex = 0; slotIndex < slotDefinitions.Length; slotIndex++)
@@ -268,6 +270,7 @@ namespace TTA.Core
                 };
 
                 match.slots.items.Add(slot);
+                MatchHistoryTimeline.TrackSlotAdded(match, slot.id);
                 area.slotIds.Add(slot.id);
             }
 
@@ -276,6 +279,7 @@ namespace TTA.Core
 
         private RuntimeElementRecord CreateRuntimeElement(MatchState match, int definitionIndex, int ownerPlayerId)
         {
+            MatchHistoryTimeline.TrackIdCounters(match);
             ElementDefinition definition = _definition.elements[definitionIndex];
             RuntimeElementRecord element = new()
             {
@@ -400,6 +404,7 @@ namespace TTA.Core
 
         private int NextRandomIndex(MatchState match, int maxExclusive)
         {
+            MatchHistoryTimeline.TrackRandom(match);
             long nextState = (1103515245L * match.random.state + 12345L) & 0x7fffffffL;
             match.random.state = (int)nextState;
             return maxExclusive <= 0 ? 0 : match.random.state % maxExclusive;
@@ -407,6 +412,7 @@ namespace TTA.Core
 
         private void QueueEvent(MatchState match, EventPayload payload)
         {
+            MatchHistoryTimeline.TrackExecution(match);
             match.execution.queuedEvents.Add(payload);
             RecordEventQueued(match, payload);
         }

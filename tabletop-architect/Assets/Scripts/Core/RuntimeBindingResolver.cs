@@ -133,7 +133,14 @@ namespace TTA.Core
             if (segments.Length != 2)
                 throw new InvalidOperationException("Event bindings only expose direct payload fields in the first implementation.");
 
-            return _eventPayload.fields.GetOrDefault(segments[1]).DeepCopy();
+            string key = segments[1];
+            if (_eventPayload.fields != null && _eventPayload.fields.TryGetValue(key, out Value fieldValue))
+                return fieldValue.DeepCopy();
+
+            if (TryResolveCompactEventField(key, out Value compactValue))
+                return compactValue;
+
+            return Value.Null();
         }
 
         private Value ResolveMatchTempsRoot(string[] segments, int offset)
@@ -230,6 +237,82 @@ namespace TTA.Core
             }
         }
 
+        private bool TryResolveCompactEventField(string key, out Value value)
+        {
+            value = Value.Null();
+            if (_eventPayload == null)
+                return false;
+
+            if (string.Equals(key, "Trigger", StringComparison.Ordinal))
+            {
+                value = Value.FromString(_eventPayload.trigger);
+                return true;
+            }
+
+            if (!_eventPayload.hasMovementData)
+                return false;
+
+            if (string.Equals(key, "ElementId", StringComparison.Ordinal))
+            {
+                value = Value.FromElementId(_eventPayload.movementElementId);
+                return true;
+            }
+
+            if (string.Equals(key, "RequestedSteps", StringComparison.Ordinal))
+            {
+                value = Value.FromInt(_eventPayload.movementRequestedSteps);
+                return true;
+            }
+
+            if (string.Equals(key, "ActualSteps", StringComparison.Ordinal))
+            {
+                value = Value.FromInt(_eventPayload.movementActualSteps);
+                return true;
+            }
+
+            if (string.Equals(key, "AreaId", StringComparison.Ordinal))
+            {
+                value = Value.FromAreaId(_eventPayload.movementAreaId);
+                return true;
+            }
+
+            if (string.Equals(key, "Area", StringComparison.Ordinal) ||
+                string.Equals(key, "AreaKey", StringComparison.Ordinal))
+            {
+                value = Value.FromString(GetRuntimeAreaKey(_eventPayload.movementAreaId));
+                return true;
+            }
+
+            if (_eventPayload.movementFinalAreaId != RuntimeIds.InvalidId)
+            {
+                if (string.Equals(key, "FinalAreaId", StringComparison.Ordinal))
+                {
+                    value = Value.FromAreaId(_eventPayload.movementFinalAreaId);
+                    return true;
+                }
+
+                if (string.Equals(key, "FinalAreaKey", StringComparison.Ordinal))
+                {
+                    value = Value.FromString(GetRuntimeAreaKey(_eventPayload.movementFinalAreaId));
+                    return true;
+                }
+            }
+
+            if (string.Equals(key, "Topology", StringComparison.Ordinal))
+            {
+                value = Value.FromString(_eventPayload.movementTopologyKey);
+                return true;
+            }
+
+            if (string.Equals(key, "Link", StringComparison.Ordinal))
+            {
+                value = Value.FromString(_eventPayload.movementLinkName);
+                return true;
+            }
+
+            return false;
+        }
+
         private RuntimePlayerRecord GetCurrentPlayer()
         {
             int playerId = _actingPlayerId != RuntimeIds.InvalidId
@@ -273,6 +356,17 @@ namespace TTA.Core
             }
 
             throw new InvalidOperationException($"Runtime area {areaId} was not found.");
+        }
+
+        private string GetRuntimeAreaKey(int areaId)
+        {
+            if (areaId == RuntimeIds.InvalidId)
+                return string.Empty;
+
+            RuntimeAreaRecord area = GetArea(areaId);
+            return area.ownerElementId == RuntimeIds.InvalidId
+                ? _definition.globalAreas[area.definitionIndex].key ?? string.Empty
+                : _definition.elements[GetElement(area.ownerElementId).definitionIndex].ownedAreas[area.definitionIndex].key ?? string.Empty;
         }
     }
 }

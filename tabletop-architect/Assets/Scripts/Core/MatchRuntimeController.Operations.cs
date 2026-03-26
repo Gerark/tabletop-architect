@@ -127,12 +127,14 @@ namespace TTA.Core
             {
                 BoxSelection selection = selections[selectionIndex];
                 BoxStockEntry stockEntry = match.GetBoxStockEntry(selection.definitionIndex);
+                MatchHistoryTimeline.TrackBoxStock(match, selection.definitionIndex);
                 stockEntry.availableCount -= selection.amount;
 
                 for (int countIndex = 0; countIndex < selection.amount; countIndex++)
                 {
                     RuntimeElementRecord element = CreateRuntimeElement(match, selection.definitionIndex, ownerPlayerId);
                     match.elements.items.Add(element);
+                    MatchHistoryTimeline.TrackElementAdded(match, element.id);
                     createdElementIds.Add(element.id);
                 }
             }
@@ -180,6 +182,7 @@ namespace TTA.Core
                 RuntimeSlotRecord slot = match.GetSlot(element.slotId);
                 RemoveElementFromSlot(match, slot, element.id);
 
+                MatchHistoryTimeline.TrackElement(match, element.id);
                 element.placementState = PlacementState.Unplaced;
                 element.areaId = RuntimeIds.InvalidId;
                 element.slotId = RuntimeIds.InvalidId;
@@ -204,7 +207,9 @@ namespace TTA.Core
                 if (element.placementState != PlacementState.Unplaced)
                     throw new InvalidOperationException("ReturnToBox only supports unplaced elements.");
 
+                MatchHistoryTimeline.TrackElement(match, element.id);
                 elementIndexes.Add(match.GetElementIndex(element.id));
+                MatchHistoryTimeline.TrackBoxStock(match, element.definitionIndex);
                 match.GetBoxStockEntry(element.definitionIndex).availableCount++;
             }
 
@@ -283,14 +288,13 @@ namespace TTA.Core
 
             for (int index = 0; index < traversedAreas.Count - 1; index++)
             {
-                QueueEvent(match, CreateMovementPayload(match, "OnAreaPassed", element.id, requestedSteps, traversedAreas.Count, traversedAreas[index], topologyKey, linkName));
+                QueueEvent(match, CreateMovementPayload("OnAreaPassed", element.id, requestedSteps, traversedAreas.Count, traversedAreas[index], topologyKey, linkName));
             }
 
-            QueueEvent(match, CreateMovementPayload(match, "OnAreaLanded", element.id, requestedSteps, traversedAreas.Count, finalAreaId, topologyKey, linkName));
+            QueueEvent(match, CreateMovementPayload("OnAreaLanded", element.id, requestedSteps, traversedAreas.Count, finalAreaId, topologyKey, linkName));
 
-            EventPayload completedPayload = CreateMovementPayload(match, "OnMovementCompleted", element.id, requestedSteps, traversedAreas.Count, finalAreaId, topologyKey, linkName);
-            completedPayload.fields.Set("FinalAreaId", Value.FromAreaId(finalAreaId));
-            completedPayload.fields.Set("FinalAreaKey", Value.FromString(GetRuntimeAreaKey(match, finalAreaId)));
+            EventPayload completedPayload = CreateMovementPayload("OnMovementCompleted", element.id, requestedSteps, traversedAreas.Count, finalAreaId, topologyKey, linkName);
+            completedPayload.movementFinalAreaId = finalAreaId;
             QueueEvent(match, completedPayload);
             RecordElementMoved(match, element.id, startAreaId, finalAreaId, requestedSteps, traversedAreas.Count);
         }
@@ -308,6 +312,7 @@ namespace TTA.Core
             if (!operation.HasParam("Target"))
             {
                 ValidatePropertyWrite(PropertyScope.Match, key, value);
+                MatchHistoryTimeline.TrackMatchProperties(match);
                 ApplyPropertyWrite(match.properties, key, value, mode);
                 return;
             }
@@ -317,14 +322,17 @@ namespace TTA.Core
             {
                 case ValueKind.PlayerId:
                     ValidatePropertyWrite(PropertyScope.Player, key, value);
+                    MatchHistoryTimeline.TrackPlayer(match, target.idValue);
                     ApplyPropertyWrite(match.GetPlayer(target.idValue).properties, key, value, mode);
                     return;
                 case ValueKind.ElementId:
                     ValidateElementPropertyWrite(match, target.idValue, key, value);
+                    MatchHistoryTimeline.TrackElement(match, target.idValue);
                     ApplyPropertyWrite(match.GetElement(target.idValue).properties, key, value, mode);
                     return;
                 case ValueKind.AreaId:
                     ValidateAreaPropertyWrite(match, target.idValue, key, value);
+                    MatchHistoryTimeline.TrackArea(match, target.idValue);
                     ApplyPropertyWrite(match.GetArea(target.idValue).properties, key, value, mode);
                     return;
                 default:
@@ -352,12 +360,15 @@ namespace TTA.Core
                         context.eventTemps.Set(key, value);
                         return;
                     case "Turn":
+                        MatchHistoryTimeline.TrackTemps(match);
                         match.temps.turn.Set(key, value);
                         return;
                     case "Setup":
+                        MatchHistoryTimeline.TrackTemps(match);
                         match.temps.setup.Set(key, value);
                         return;
                     default:
+                        MatchHistoryTimeline.TrackTemps(match);
                         match.temps.match.Set(key, value);
                         return;
                 }
@@ -367,12 +378,15 @@ namespace TTA.Core
             switch (target.kind)
             {
                 case ValueKind.PlayerId:
+                    MatchHistoryTimeline.TrackPlayer(match, target.idValue);
                     match.GetPlayer(target.idValue).temps.Set(key, value);
                     return;
                 case ValueKind.ElementId:
+                    MatchHistoryTimeline.TrackElement(match, target.idValue);
                     match.GetElement(target.idValue).temps.Set(key, value);
                     return;
                 case ValueKind.AreaId:
+                    MatchHistoryTimeline.TrackArea(match, target.idValue);
                     match.GetArea(target.idValue).temps.Set(key, value);
                     return;
                 default:
@@ -399,7 +413,9 @@ namespace TTA.Core
             }
 
             int nextIndex = (currentIndex + 1) % orderedPlayers.Count;
+            MatchHistoryTimeline.TrackProgression(match);
             match.progression.currentPlayerId = orderedPlayers[nextIndex].id;
+            MatchHistoryTimeline.TrackTemps(match);
             match.temps.turn.Clear();
             RecordTurnAdvanced(match, match.progression.currentPlayerId);
         }
@@ -408,6 +424,7 @@ namespace TTA.Core
         {
             var resolver = context.CreateResolver(_definition, match);
 
+            MatchHistoryTimeline.TrackProgression(match);
             match.progression.ended = true;
             match.progression.winnerPlayerId = RuntimeIds.InvalidId;
 
@@ -433,12 +450,14 @@ namespace TTA.Core
             for (int index = 0; index < elementIds.Count; index++)
             {
                 RuntimeElementRecord element = match.GetElement(elementIds[index]);
+                MatchHistoryTimeline.TrackElement(match, element.id);
                 element.currentFaceIndex = FindFaceIndex(GetElementDefinition(element), faceId);
             }
 
             EventPayload payload = new()
             {
-                trigger = "OnFaceChanged"
+                trigger = "OnFaceChanged",
+                fields = new ValueMap()
             };
             payload.fields.Set("FaceId", Value.FromString(faceId));
             payload.fields.Set("ElementIds", CreateElementCollection(elementIds));
@@ -458,12 +477,14 @@ namespace TTA.Core
                 if (definition.faces.Length != 2)
                     throw new InvalidOperationException("FlipElement currently only supports two-face elements.");
 
+                MatchHistoryTimeline.TrackElement(match, element.id);
                 element.currentFaceIndex = element.currentFaceIndex == 0 ? 1 : 0;
             }
 
             EventPayload payload = new()
             {
-                trigger = "OnFaceChanged"
+                trigger = "OnFaceChanged",
+                fields = new ValueMap()
             };
             payload.fields.Set("ElementIds", CreateElementCollection(elementIds));
             QueueEvent(match, payload);
@@ -509,6 +530,7 @@ namespace TTA.Core
                     faceIndex = NextRandomIndex(match, definition.faces.Length);
                 }
 
+                MatchHistoryTimeline.TrackElement(match, element.id);
                 element.currentFaceIndex = faceIndex;
                 int faceValue = definition.faces[faceIndex].numericValue;
                 total += faceValue;
@@ -518,7 +540,8 @@ namespace TTA.Core
 
             EventPayload payload = new()
             {
-                trigger = "OnRolled"
+                trigger = "OnRolled",
+                fields = new ValueMap()
             };
             payload.fields.Set("Total", Value.FromInt(total));
             payload.fields.Set("Results", Value.FromCollection(results));
@@ -564,13 +587,16 @@ namespace TTA.Core
             }
 
             BoxStockEntry selectedStock = match.GetBoxStockEntry(definitionIndex);
+            MatchHistoryTimeline.TrackBoxStock(match, definitionIndex);
             selectedStock.availableCount--;
 
             RuntimeElementRecord element = CreateRuntimeElement(match, definitionIndex, ownerPlayerId);
             match.elements.items.Add(element);
+            MatchHistoryTimeline.TrackElementAdded(match, element.id);
 
             Value selectedElement = Value.FromElementId(element.id);
             ValidatePropertyWrite(PropertyScope.Player, assignTo, selectedElement);
+            MatchHistoryTimeline.TrackPlayer(match, ownerPlayerId);
             ApplyPropertyWrite(match.GetPlayer(ownerPlayerId).properties, assignTo, selectedElement, "Set");
         }
 
@@ -607,6 +633,7 @@ namespace TTA.Core
                 }
             }
 
+            MatchHistoryTimeline.TrackProgression(match);
             match.progression.currentPlayerId = bestPlayerId;
         }
 
@@ -974,6 +1001,7 @@ namespace TTA.Core
                     faceIndex = NextRandomIndex(match, definition.faces.Length);
                 }
 
+                MatchHistoryTimeline.TrackElement(match, element.id);
                 element.currentFaceIndex = faceIndex;
                 total += definition.faces[faceIndex].numericValue;
             }
@@ -981,20 +1009,19 @@ namespace TTA.Core
             return total;
         }
 
-        private EventPayload CreateMovementPayload(MatchState match, string trigger, int elementId, int requestedSteps, int actualSteps, int areaId, string topologyKey, string linkName)
+        private EventPayload CreateMovementPayload(string trigger, int elementId, int requestedSteps, int actualSteps, int areaId, string topologyKey, string linkName)
         {
             EventPayload payload = new()
             {
-                trigger = trigger
+                trigger = trigger,
+                hasMovementData = true,
+                movementElementId = elementId,
+                movementRequestedSteps = requestedSteps,
+                movementActualSteps = actualSteps,
+                movementAreaId = areaId,
+                movementTopologyKey = topologyKey ?? string.Empty,
+                movementLinkName = linkName ?? string.Empty
             };
-            payload.fields.Set("ElementId", Value.FromElementId(elementId));
-            payload.fields.Set("RequestedSteps", Value.FromInt(requestedSteps));
-            payload.fields.Set("ActualSteps", Value.FromInt(actualSteps));
-            payload.fields.Set("AreaId", Value.FromAreaId(areaId));
-            payload.fields.Set("Area", Value.FromString(GetRuntimeAreaKey(match, areaId)));
-            payload.fields.Set("AreaKey", Value.FromString(GetRuntimeAreaKey(match, areaId)));
-            payload.fields.Set("Topology", Value.FromString(topologyKey));
-            payload.fields.Set("Link", Value.FromString(linkName));
             return payload;
         }
 

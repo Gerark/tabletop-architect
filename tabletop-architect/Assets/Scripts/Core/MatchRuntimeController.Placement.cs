@@ -38,6 +38,7 @@ namespace TTA.Core
             for (int sourceIndex = 0; sourceIndex < sourceSlotIds.Count; sourceIndex++)
             {
                 RuntimeSlotRecord sourceSlot = match.GetSlot(sourceSlotIds[sourceIndex]);
+                MatchHistoryTimeline.TrackSlot(match, sourceSlot.id);
                 for (int index = sourceSlot.elementIds.Count - 1; index >= 0; index--)
                 {
                     if (elementIds.Contains(sourceSlot.elementIds[index]))
@@ -55,6 +56,7 @@ namespace TTA.Core
 
             if (!destinationAlreadyContainsSameSingle)
             {
+                MatchHistoryTimeline.TrackSlot(match, destinationSlot.id);
                 for (int index = 0; index < elementIds.Count; index++)
                     destinationSlot.elementIds.Add(elementIds[index]);
             }
@@ -64,6 +66,7 @@ namespace TTA.Core
             for (int index = 0; index < elementIds.Count; index++)
             {
                 RuntimeElementRecord element = match.GetElement(elementIds[index]);
+                MatchHistoryTimeline.TrackElement(match, element.id);
                 bool wasUnplaced = element.placementState == PlacementState.Unplaced;
 
                 element.placementState = PlacementState.Placed;
@@ -117,12 +120,14 @@ namespace TTA.Core
             for (int index = 0; index < slot.elementIds.Count; index++)
             {
                 RuntimeElementRecord element = match.GetElement(slot.elementIds[index]);
+                MatchHistoryTimeline.TrackElement(match, element.id);
                 element.orderIndex = index;
             }
         }
 
         private void RemoveElementFromSlot(MatchState match, RuntimeSlotRecord slot, int elementId)
         {
+            MatchHistoryTimeline.TrackSlot(match, slot.id);
             int index = IndexOf(slot.elementIds, elementId);
             if (index >= 0)
                 slot.elementIds.RemoveAt(index);
@@ -215,6 +220,7 @@ namespace TTA.Core
                 }
 
                 match.topologies.items.Add(runtimeTopology);
+                MatchHistoryTimeline.TrackTopologyAdded(match, ownerElementId, runtimeTopology.key);
             }
         }
 
@@ -223,7 +229,10 @@ namespace TTA.Core
             for (int topologyIndex = match.topologies.items.Count - 1; topologyIndex >= 0; topologyIndex--)
             {
                 if (match.topologies.items[topologyIndex].ownerElementId == ownerElementId)
+                {
+                    MatchHistoryTimeline.TrackTopology(match, ownerElementId, match.topologies.items[topologyIndex].key);
                     match.topologies.items.RemoveAt(topologyIndex);
+                }
             }
 
             for (int areaIndex = match.areas.items.Count - 1; areaIndex >= 0; areaIndex--)
@@ -235,9 +244,11 @@ namespace TTA.Core
                 for (int slotIndex = area.slotIds.Count - 1; slotIndex >= 0; slotIndex--)
                 {
                     int slotListIndex = match.GetSlotIndex(area.slotIds[slotIndex]);
+                    MatchHistoryTimeline.TrackSlot(match, area.slotIds[slotIndex]);
                     match.slots.items.RemoveAt(slotListIndex);
                 }
 
+                MatchHistoryTimeline.TrackArea(match, area.id);
                 match.areas.items.RemoveAt(areaIndex);
             }
         }

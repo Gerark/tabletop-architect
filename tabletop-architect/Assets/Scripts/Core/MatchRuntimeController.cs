@@ -196,11 +196,14 @@ namespace TTA.Core
             if (match.progression.ended)
             {
                 ClearResolutionState(match);
+                MatchHistoryTimeline.TrackInteraction(match);
+                MatchHistoryTimeline.TrackExecution(match);
                 match.ClearWindow();
                 match.execution.resolvingPlayerId = RuntimeIds.InvalidId;
                 match.execution.mode = MatchExecutionMode.Ended;
                 RecordMatchEnded(match);
                 FlushTranscriptBatch(match, TranscriptStopReason.MatchEnded, null);
+                CaptureCurrentCheckpoint(match);
                 return;
             }
 
@@ -211,6 +214,7 @@ namespace TTA.Core
         {
             while (match.execution.queuedEvents.Count > 0 && !match.progression.ended)
             {
+                MatchHistoryTimeline.TrackExecution(match);
                 EventPayload payload = match.execution.queuedEvents[0];
                 match.execution.queuedEvents.RemoveAt(0);
 
@@ -257,12 +261,14 @@ namespace TTA.Core
         private void ApplyPhaseTransition(MatchState match, string phaseKey)
         {
             GetPhaseDefinition(GetRulesetDefinition(match.progression.rulesetKey), phaseKey);
+            MatchHistoryTimeline.TrackProgression(match);
             match.progression.currentPhaseKey = phaseKey;
             RecordPhaseChanged(match, phaseKey);
 
             EventPayload payload = new()
             {
-                trigger = "OnPhaseStarted"
+                trigger = "OnPhaseStarted",
+                fields = new ValueMap()
             };
             payload.fields.Set("Phase", Value.FromString(phaseKey));
             QueueEvent(match, payload);
@@ -311,6 +317,7 @@ namespace TTA.Core
             if (winner.kind != ValueKind.PlayerId)
                 throw new InvalidOperationException("Victory winner must resolve to a player id in the first implementation.");
 
+            MatchHistoryTimeline.TrackProgression(match);
             match.progression.ended = true;
             match.progression.winnerPlayerId = winner.idValue;
             ClearResolutionState(match);
@@ -318,6 +325,7 @@ namespace TTA.Core
 
         private void ClearResolutionState(MatchState match)
         {
+            MatchHistoryTimeline.TrackExecution(match);
             match.execution.queuedEvents.Clear();
             match.execution.queuedNextPhase = string.Empty;
             match.execution.resolvingPlayerId = RuntimeIds.InvalidId;

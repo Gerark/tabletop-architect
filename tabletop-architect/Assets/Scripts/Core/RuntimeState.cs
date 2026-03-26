@@ -41,7 +41,15 @@ namespace TTA.Core
     public sealed class EventPayload
     {
         public string trigger = string.Empty;
-        public ValueMap fields = new();
+        public ValueMap fields;
+        public bool hasMovementData;
+        public int movementElementId = RuntimeIds.InvalidId;
+        public int movementRequestedSteps;
+        public int movementActualSteps;
+        public int movementAreaId = RuntimeIds.InvalidId;
+        public int movementFinalAreaId = RuntimeIds.InvalidId;
+        public string movementTopologyKey = string.Empty;
+        public string movementLinkName = string.Empty;
     }
 
     [Serializable]

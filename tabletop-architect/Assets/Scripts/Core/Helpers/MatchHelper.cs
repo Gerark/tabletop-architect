@@ -27,6 +27,17 @@ namespace TTA.Core
             throw new InvalidOperationException($"Runtime player {playerId} was not found.");
         }
 
+        public static int GetPlayerIndex(this MatchState match, int playerId)
+        {
+            for (int index = 0; index < match.players.items.Count; index++)
+            {
+                if (match.players.items[index].id == playerId)
+                    return index;
+            }
+
+            return RuntimeIds.InvalidIndex;
+        }
+
         public static RuntimeElementRecord GetElement(this MatchState match, int elementId)
         {
             for (int index = 0; index < match.elements.items.Count; index++)
@@ -105,5 +116,30 @@ namespace TTA.Core
             return RuntimeIds.InvalidIndex;
         }
 
+        public static int GetAreaIndex(this MatchState match, int areaId)
+        {
+            for (int index = 0; index < match.areas.items.Count; index++)
+            {
+                if (match.areas.items[index].id == areaId)
+                    return index;
+            }
+
+            return RuntimeIds.InvalidIndex;
+        }
+
+        public static int GetTopologyIndex(this MatchState match, int ownerElementId, string topologyKey)
+        {
+            for (int index = 0; index < match.topologies.items.Count; index++)
+            {
+                RuntimeTopologyRecord topology = match.topologies.items[index];
+                if (topology.ownerElementId == ownerElementId &&
+                    string.Equals(topology.key, topologyKey, StringComparison.Ordinal))
+                {
+                    return index;
+                }
+            }
+
+            return RuntimeIds.InvalidIndex;
+        }
     }
 }

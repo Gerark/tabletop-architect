@@ -36,7 +36,6 @@ namespace TTA.Core
         {
             TranscriptEntry entry = CreateTranscriptEntry(match, TranscriptEntryKind.EventQueued, payload.trigger);
             entry.fields.Set("Trigger", Value.FromString(payload.trigger));
-            CopyPayloadFields(match, entry, payload);
         }
 
         private void RecordEventResolved(MatchState match, EventPayload payload)
@@ -148,24 +147,20 @@ namespace TTA.Core
             if (match.transcript.pendingEntries.Count == 0)
                 return;
 
-            match.transcript.completedBatches.Add(MaterializeTranscriptBatch(match, stopReason, window, RuntimeIds.InvalidId));
-            for (int index = 0; index < match.players.items.Count; index++)
-            {
-                int observerPlayerId = match.players.items[index].id;
-                match.transcript.completedBatches.Add(MaterializeTranscriptBatch(match, stopReason, window, observerPlayerId));
-            }
-
+            // Keep one canonical batch and avoid materializing observer-specific copies at runtime.
+            match.transcript.completedBatches.Add(CaptureTranscriptBatch(match, stopReason, window));
             match.transcript.pendingEntries.Clear();
         }
 
-        private TranscriptBatch MaterializeTranscriptBatch(MatchState match, TranscriptStopReason stopReason, InteractionWindow window, int observerPlayerId)
+        private TranscriptBatch CaptureTranscriptBatch(MatchState match, TranscriptStopReason stopReason, InteractionWindow window)
         {
             TranscriptBatch batch = new()
             {
                 id = match.transcript.nextBatchId++,
-                observerPlayerId = observerPlayerId,
+                observerPlayerId = RuntimeIds.InvalidId,
                 stopReason = stopReason,
-                interactionWindowId = window?.id ?? RuntimeIds.InvalidId
+                interactionWindowId = window?.id ?? RuntimeIds.InvalidId,
+                entries = new List<TranscriptEntry>(match.transcript.pendingEntries.Count)
             };
 
             batch.metadata.Set("Phase", Value.FromString(match.progression.currentPhaseKey));
@@ -180,36 +175,9 @@ namespace TTA.Core
                     batch.metadata.Set("Trigger", Value.FromString(window.sourceTrigger));
             }
 
-            for (int index = 0; index < match.transcript.pendingEntries.Count; index++)
-                batch.entries.Add(MaterializeTranscriptEntry(match.transcript.pendingEntries[index], observerPlayerId));
+            batch.entries.AddRange(match.transcript.pendingEntries);
 
             return batch;
-        }
-
-        private TranscriptEntry MaterializeTranscriptEntry(TranscriptEntry source, int observerPlayerId)
-        {
-            TranscriptEntry entry = new()
-            {
-                kind = source.kind,
-                code = source.code,
-                actorPlayerId = source.actorPlayerId,
-                fields = source.fields.DeepCopy()
-            };
-
-            for (int index = 0; index < source.privateFields.Count; index++)
-            {
-                TranscriptPrivateField privateField = source.privateFields[index];
-                Value value = observerPlayerId == privateField.visibleToPlayerId
-                    ? privateField.visibleValue
-                    : privateField.hiddenValue;
-
-                if (value != null && !value.IsNull)
-                    entry.fields.Set(privateField.key, value);
-                else if (!entry.fields.Contains(privateField.key))
-                    entry.fields.Set(privateField.key, Value.Null());
-            }
-
-            return entry;
         }
 
         private TranscriptEntry CreateTranscriptEntry(MatchState match, TranscriptEntryKind kind, string code, int actorPlayerId = RuntimeIds.InvalidId)
@@ -286,7 +254,17 @@ namespace TTA.Core
 
         private void CopyPayloadFields(MatchState match, TranscriptEntry entry, EventPayload payload)
         {
-            if (payload == null || payload.fields == null)
+            if (payload == null)
+                return;
+
+            entry.fields.Set("Trigger", Value.FromString(payload.trigger));
+            if (payload.hasMovementData)
+            {
+                CopyMovementPayloadFields(match, entry, payload);
+                return;
+            }
+
+            if (payload.fields == null)
                 return;
 
             entry.fields = payload.fields.DeepCopy();
@@ -317,6 +295,22 @@ namespace TTA.Core
             {
                 entry.fields.Set("FaceId", Value.FromString("Hidden"));
                 AddPrivateField(entry, "FaceId", hiddenOwnerPlayerId, faceId, Value.FromString("Hidden"));
+            }
+        }
+
+        private void CopyMovementPayloadFields(MatchState match, TranscriptEntry entry, EventPayload payload)
+        {
+            entry.fields.Set("ElementId", Value.FromElementId(payload.movementElementId));
+            entry.fields.Set("ElementKey", Value.FromString(GetElementDefinition(match.GetElement(payload.movementElementId)).key));
+            entry.fields.Set("RequestedSteps", Value.FromInt(payload.movementRequestedSteps));
+            entry.fields.Set("ActualSteps", Value.FromInt(payload.movementActualSteps));
+            entry.fields.Set("AreaId", Value.FromAreaId(payload.movementAreaId));
+            entry.fields.Set("Area", Value.FromString(GetRuntimeAreaKey(match, payload.movementAreaId)));
+
+            if (payload.movementFinalAreaId != RuntimeIds.InvalidId)
+            {
+                entry.fields.Set("FinalAreaId", Value.FromAreaId(payload.movementFinalAreaId));
+                entry.fields.Set("FinalAreaKey", Value.FromString(GetRuntimeAreaKey(match, payload.movementFinalAreaId)));
             }
         }
 

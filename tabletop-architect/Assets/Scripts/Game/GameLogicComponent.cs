@@ -82,7 +82,7 @@ public class GameLogicComponent : MonoBehaviour
         presenter?.ResetPresentation(_engine.GetDefinition(), _match);
 
         Debug.Log($"Started match. Phase: {_match.progression.currentPhaseKey}, current player id: {_match.progression.currentPlayerId}");
-        DrainTranscript();
+        //DrainTranscript();
     }
 
     public void ConfigureCodeContent(
@@ -144,7 +144,7 @@ public class GameLogicComponent : MonoBehaviour
 
     private void FinishStepLogging()
     {
-        DrainTranscript();
+        //DrainTranscript();
 
         if (_match.progression.ended)
         {

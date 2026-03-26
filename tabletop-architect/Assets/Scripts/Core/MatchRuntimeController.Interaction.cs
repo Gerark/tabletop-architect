@@ -76,6 +76,8 @@ namespace TTA.Core
             BeginTranscriptBatch(match);
             RecordActionSubmitted(match, actionKey, actorPlayerId, windowId);
 
+            MatchHistoryTimeline.TrackInteraction(match);
+            MatchHistoryTimeline.TrackExecution(match);
             match.ClearWindow();
             match.execution.mode = MatchExecutionMode.Resolving;
             match.execution.resolvingPlayerId = actorPlayerId;
@@ -120,7 +122,9 @@ namespace TTA.Core
             BeginTranscriptBatch(match);
             RecordReactionSubmitted(match, reactionKey, playerId, windowId);
 
-            EventPayload reactionSource = RuntimeDataClone.Clone(match.execution.currentEvent) ?? new EventPayload();
+            EventPayload reactionSource = RuntimeStateCopy.Clone(match.execution.currentEvent) ?? new EventPayload();
+            MatchHistoryTimeline.TrackInteraction(match);
+            MatchHistoryTimeline.TrackExecution(match);
             match.ClearWindow();
             match.execution.mode = MatchExecutionMode.Resolving;
             match.execution.resolvingPlayerId = playerId;
@@ -259,6 +263,9 @@ namespace TTA.Core
                 ? match.interaction.pendingActionPlayerId
                 : match.progression.currentPlayerId;
 
+            MatchHistoryTimeline.TrackIdCounters(match);
+            MatchHistoryTimeline.TrackInteraction(match);
+            MatchHistoryTimeline.TrackExecution(match);
             InteractionWindow window = new()
             {
                 id = match.idCounters.nextInteractionWindowId++,
@@ -282,6 +289,9 @@ namespace TTA.Core
 
         private void OpenReactionWindow(MatchState match, List<int> eligiblePlayerIds, string trigger)
         {
+            MatchHistoryTimeline.TrackIdCounters(match);
+            MatchHistoryTimeline.TrackInteraction(match);
+            MatchHistoryTimeline.TrackExecution(match);
             InteractionWindow window = new()
             {
                 id = match.idCounters.nextInteractionWindowId++,
